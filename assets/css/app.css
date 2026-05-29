@@ -1,0 +1,123 @@
+/* ─── Sidebar Mobile Toggle ───────────────────────────────────────────── */
+.sidebar {
+    transition: transform 0.3s ease;
+    z-index: 1040;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1035;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translateX(-100%);
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    .sidebar-toggle {
+        display: inline-flex !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .sidebar-toggle {
+        display: none !important;
+    }
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+
+/* ─── Sidebar toggle button in navbar ─────────────────────────────────── */
+.sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-toggle:hover {
+    color: #0d6efd;
+}
+
+/* ─── DataTables responsive tweaks ────────────────────────────────────── */
+@media (max-width: 575.98px) {
+    .table-responsive-stack tr {
+        display: block;
+        border: 1px solid #dee2e6;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+    }
+    .table-responsive-stack td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.375rem 0.5rem;
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .table-responsive-stack td:last-child {
+        border-bottom: none;
+    }
+    .table-responsive-stack td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 0.5rem;
+        white-space: nowrap;
+    }
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        float: none;
+        text-align: left;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+    }
+}
+
+/* ─── Print Styles ─────────────────────────────────────────────────────── */
+@media print {
+    .sidebar, .sidebar-overlay, .navbar, footer, .btn, .btn-close,
+    .alert, .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_paginate,
+    .dataTables_wrapper .dt-buttons {
+        display: none !important;
+    }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    .card-body { padding: 10px !important; }
+    body { background: #fff !important; font-size: 9pt; }
+    main { padding: 0 !important; }
+    .table { font-size: 8pt; }
+    .table th { background: #1a3a5c !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .min-vh-100 { min-height: auto !important; }
+    @page { margin: 15mm 10mm; }
+}
+
+/* ─── Utility ──────────────────────────────────────────────────────────── */
+.min-w-0 {
+    min-width: 0;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
