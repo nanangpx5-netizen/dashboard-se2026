@@ -4,10 +4,14 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+cookies.txt
 storage/import/*.xlsx
 storage/export/*.xlsx
 storage/backup/*.sql
 storage/temp/
+storage/cache/
 .idea/
 .vscode/
 *.sql
+data/sipw/
+data/export_sipw.xlsx
