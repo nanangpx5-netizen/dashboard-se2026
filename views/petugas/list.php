@@ -46,22 +46,24 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0 datatable small">
+            <table class="table table-sm table-hover mb-0 datatable no-datatable small" id="tablePetugas">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-center" style="width:50px">No</th>
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Terakhir Login</th>
                         <?php if (in_array($current_user['role'] ?? '', ['admin', 'operator'])): ?>
-                        <th class="text-end">Aksi</th>
+                        <th class="text-end" style="width:140px">Aksi</th>
                         <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $u): ?>
                     <tr>
+                        <td class="text-center text-muted"></td>
                         <td class="fw-semibold"><?= htmlspecialchars($u['username']) ?></td>
                         <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
                         <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : ($u['role'] === 'pml' ? 'warning text-dark' : ($u['role'] === 'pcl' ? 'success' : ($u['role'] === 'task_force' ? 'info' : 'primary'))) ?>"><?= htmlspecialchars(ROLE_LABELS[$u['role']] ?? $u['role']) ?></span></td>
@@ -93,9 +95,6 @@
                         <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($users)): ?>
-                    <tr><td colspan="<?= in_array($current_user['role'] ?? '', ['admin', 'operator']) ? '6' : '5' ?>" class="text-center text-muted py-4">Belum ada data petugas.</td></tr>
-                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

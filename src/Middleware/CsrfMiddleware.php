@@ -28,7 +28,9 @@ class CsrfMiddleware extends BaseMiddleware
                 echo json_encode(['success' => false, 'message' => 'Token CSRF tidak valid']);
                 exit;
             }
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '?page=login'));
+            $referer = $_SERVER['HTTP_REFERER'] ?? '';
+            $safeUrl = (str_starts_with($referer, '?') || str_starts_with($referer, '/')) ? $referer : '?page=login';
+            header('Location: ' . $safeUrl);
             exit;
         }
     }

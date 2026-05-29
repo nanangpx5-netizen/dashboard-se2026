@@ -37,7 +37,10 @@ class WilayahController extends Controller
         ")->fetchAll();
 
         $this->data['page_title'] = 'Data Wilayah';
-        $this->render('wilayah/list', ['wilayah' => $data]);
+        $this->render('wilayah/list', [
+            'wilayah' => $data,
+            'js'      => ['wilayah'],
+        ]);
     }
 
     private function handleEdit(): void

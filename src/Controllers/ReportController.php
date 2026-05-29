@@ -217,7 +217,7 @@ class ReportController extends Controller
         $html = $this->renderPrintHtml($jenis, $data, true);
 
         $options = new Options();
-        $options->set('isRemoteEnabled', true);
+        $options->set('isRemoteEnabled', false);
         $options->set('defaultFont', 'Helvetica');
         $options->set('isHtml5ParserEnabled', true);
 

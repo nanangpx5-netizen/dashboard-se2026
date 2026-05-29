@@ -72,7 +72,7 @@ class ImportController extends Controller
         $pdo = Database::instance()->pdo();
 
         // Data existing — single query
-        $stats = $pdo->query("
+        $existingStats = $pdo->query("
             SELECT
                 COUNT(*)                    AS total_sls,
                 COALESCE(SUM(muatan), 0)    AS total_muatan,
@@ -80,14 +80,14 @@ class ImportController extends Controller
                 COUNT(DISTINCT CONCAT(kdkec, kddesa)) AS total_desa
             FROM sipw_import
         ")->fetch();
-        $totalSls   = $stats['total_sls'];
-        $totalMuatan = $stats['total_muatan'];
-        $totalKec    = $stats['total_kec'];
-        $totalDesa   = $stats['total_desa'];
+        $totalSls   = $existingStats['total_sls'];
+        $totalMuatan = $existingStats['total_muatan'];
+        $totalKec    = $existingStats['total_kec'];
+        $totalDesa   = $existingStats['total_desa'];
 
         // Import history
         $history = $this->processor->getImportHistory(20);
-        $stats   = $this->processor->getImportStats();
+        $importStats   = $this->processor->getImportStats();
 
         // Session data untuk preview
         $sessionFile = Session::get('import_file');
@@ -105,7 +105,7 @@ class ImportController extends Controller
             'total_kec'    => $totalKec,
             'total_desa'   => $totalDesa,
             'history'      => $history,
-            'stats'        => $stats,
+            'stats'        => $importStats,
             'preview_info' => $previewInfo,
             'has_file'     => $sessionFile && is_file($sessionFile),
             'js'           => ['import'],
@@ -236,7 +236,8 @@ class ImportController extends Controller
         $this->processor->setUkuranFile($preview['ukuran_file'] ?? 0);
 
         // Proses import
-        $result = $this->processor->import($filePath, $userId, $ipAddr);
+        $totalBaris = $preview['total_baris'] ?? null;
+        $result = $this->processor->import($filePath, $userId, $ipAddr, null, $totalBaris);
 
         // Hapus file setelah import
         $this->processor->cleanupFile($filePath);

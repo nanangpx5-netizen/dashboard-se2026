@@ -50,7 +50,6 @@ class AuditLogController extends Controller
 
         $filters = [
             'module'    => $_GET['module'] ?? '',
-            'action'    => $_GET['action'] ?? '',
             'user_id'   => $_GET['user_id'] ?? '',
             'date_from' => $_GET['date_from'] ?? '',
             'date_to'   => $_GET['date_to'] ?? '',

@@ -157,6 +157,7 @@ class AuthController extends Controller
 
         Session::setFingerprint();
         Session::regenerate();
+        Security::generateCsrfToken();
         $this->clearFailedAttempts($pdo, $user['username']);
 
         $stmt = $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = ?");

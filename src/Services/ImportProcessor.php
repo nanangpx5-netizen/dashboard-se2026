@@ -176,7 +176,7 @@ class ImportProcessor
      * @param callable|null $progressCallback function($processed, $total, $inserted, $updated, $failed)
      * @return array  ['success' => bool, 'batch_id' => string, 'stats' => [], 'errors' => []]
      */
-    public function import(string $filePath, int $userId, string $ipAddress, ?callable $progressCallback = null): array
+    public function import(string $filePath, int $userId, string $ipAddress, ?callable $progressCallback = null, ?int $totalRows = null): array
     {
         $this->batchId = $this->generateBatchId();
         $waktuMulai = date('Y-m-d H:i:s');
@@ -192,8 +192,7 @@ class ImportProcessor
         $mapping = [];
         $rowsProcessed = 0;
         $batchRows = [];
-        $previewInfo = $this->preview($filePath, 1);
-        $this->totalBaris = $previewInfo['total_rows'];
+        $this->totalBaris = $totalRows ?? 0;
         $headerValidation = [];
 
         try {
@@ -356,7 +355,7 @@ class ImportProcessor
                 $stmt->execute([
                     $row['idfrs'] ?? null,
                     $row['semester'] ?? null,
-                    $row['idsubsls'] ?? null,
+                    $row['idsubsls'] ?: ($row['kdprov'] ?? '') . ($row['kdkab'] ?? '') . ($row['kdkec'] ?? '') . ($row['kddesa'] ?? '') . ($row['kdsls'] ?? '') . '00',
                     $row['kdprov'] ?? null,
                     $row['kdkab'] ?? null,
                     $row['kdkec'] ?? null,

@@ -14,9 +14,10 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0 datatable small">
+            <table class="table table-sm table-hover mb-0 datatable no-datatable small" id="tableWilayah">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-center" style="width:50px">No</th>
                         <th>Kecamatan</th>
                         <th class="text-center">Kebutuhan PCL</th>
                         <th class="text-center">Kebutuhan PML</th>
@@ -34,6 +35,7 @@
                         $progress = $row['total_sls'] > 0 ? round(($row['completed_sls'] / $row['total_sls']) * 100, 1) : 0;
                         ?>
                         <tr>
+                            <td class="text-center text-muted"></td>
                             <td class="fw-semibold"><?= htmlspecialchars($row['nama_kecamatan']) ?>
                                 <br><small class="text-muted"><?= htmlspecialchars($row['kode_kecamatan']) ?></small>
                             </td>
@@ -57,9 +59,6 @@
                             </td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if (empty($wilayah)): ?>
-                        <tr><td colspan="9" class="text-center text-muted py-4">Belum ada data wilayah.</td></tr>
-                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

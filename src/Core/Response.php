@@ -59,8 +59,9 @@ final class Response
 
     public static function back(): never
     {
-        $referer = $_SERVER['HTTP_REFERER'] ?? '?page=dashboard';
-        self::redirect($referer);
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $safeUrl = (str_starts_with($referer, '?') || str_starts_with($referer, '/')) ? $referer : '?page=dashboard';
+        self::redirect($safeUrl);
     }
 
     public static function withFlash(string $url, string $type, string $message): never
