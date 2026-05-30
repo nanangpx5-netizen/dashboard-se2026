@@ -14,15 +14,16 @@ Integrate official prelist SE2026 data into dashboard and fix all post-integrati
 - **DataTable edge case handled**: `AuditLogController.dataTable()` now wraps in try-catch, clamps `$start >= 0`, handles `length=-1` (→ 10,000), casts nullable columns safely
 - **Petugas page restricted to admin-only**: `PAGE_ACCESS['dashboard']['petugas']` changed to `[ROLE_ADMIN]`; `PetugasController::index()` calls `$this->requireRole('admin')` defense-in-depth; sidebar link hidden for non-admin; `requireRole()` in base Controller now redirects with flash error instead of blank 403
 - **Petugas view updated**: shows ID + Nama Lengkap columns; `nama_lengkap` added to SQL SELECT; ORDER BY `id` for natural listing
-- **Prelist SQL tables created**: `prelist_kabkota`, `prelist_kecamatan`, `prelist_sls` — all with proper indexes
+- **Prelist SQL tables created**: `prelist_kabkota`, `prelist_kecamatan`, `prelist_sls`, `prelist_subsektor` — all with proper indexes
 - **`scripts/import_prelist.php`**: CLI streaming import via OpenSpout 4, batch INSERT with UPSERT
   - Sheet 1 (Prelist SE2026) → `prelist_kabkota` (38 rows)
   - Sheet 2 (Prelist SE2026 kecamatan) → `prelist_kecamatan` (667 rows)
   - Sheets 7-44 (Prelist SE2026_35XX per-kab SLS detail) → `prelist_sls` (234,180 rows)
-  - Sheets 3-6, 45-46: skipped (desa aggregate, SBR, subsektorA, plkumkm, empty)
-  - Options: `--kab=3509`, `--quick` (skip kabkota/kecamatan), `--batch=2000`
+  - Sheet 5 (subsektorA) → `prelist_subsektor` (191,566 rows) + UPDATE `prelist_sls.subsektor` (184,984 SLS populated)
+  - Sheets 3, 4, 6, 45, 46: skipped (desa aggregate, SBR, plkumkm, empty)
+  - Options: `--kab=3509`, `--quick`, `--subsektor`, `--batch=2000`
   - Manual arg parsing (getopt unreliable on this PHP build)
-- **Prelist data imported**: 38 kab/kota, 667 kecamatan, 234,180 SLS from `data/PRELIST SE2026.xlsx`
+- **Prelist data imported**: 38 kab/kota, 667 kecamatan, 234,180 SLS, 191,566 subsektor lookup
 - **`src/Models/PrelistModel.php`**: KPI, komposisi usaha, perbandingan SE2016, beban kerja, workload stats queries
 - **Dashboard integration**: `DashboardController` injects PrelistModel data; view shows KPI card (total KK/SLS/UTP, UB/UM/UMK, PPL/PML) + stacked bar chart SE2016 vs SE2026 per kab + doughnut komposisi usaha (UB/UM/UMK); `dashboard.js` initializes both new charts
 - **500 ParseError fixed**: unclosed `<?php if (...): ?>` in inline JS block at `views/dashboard/index.php:487` — now uses proper `if/else/endif` structure
