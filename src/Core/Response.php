@@ -25,7 +25,20 @@ final class Response
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        if ($json === false) {
+            $json = json_encode([
+                'success' => false,
+                'message' => 'JSON encoding error: ' . json_last_error_msg(),
+                'draw' => $data['draw'] ?? 0,
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => []
+            ]);
+        }
+        
+        echo $json;
         exit;
     }
 

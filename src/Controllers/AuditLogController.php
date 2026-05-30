@@ -83,16 +83,13 @@ class AuditLogController extends Controller
                 'data'            => $rows,
             ]);
         } catch (\Throwable $e) {
-            http_response_code(500);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode([
+            $this->json([
                 'draw'            => (int) ($_GET['draw'] ?? 0),
                 'recordsTotal'    => 0,
                 'recordsFiltered' => 0,
                 'data'            => [],
                 'error'           => $e->getMessage(),
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
+            ]);
         }
     }
 
@@ -122,7 +119,7 @@ class AuditLogController extends Controller
 
         // Import stats: render key-value
         if (isset($data['baris_berhasil']) || isset($data['batch_id'])) {
-            $html = '<table class="table table-sm mb-0 small" style="min-width:200px">';
+            $html = '<table class="table table-sm mb-0 small" style="min-width:200px"><tbody>';
             foreach ($data as $k => $v) {
                 $val = is_scalar($v) ? htmlspecialchars((string) $v) : htmlspecialchars(json_encode($v, JSON_UNESCAPED_UNICODE));
                 $html .= "<tr><td class='fw-semibold'>{$k}</td><td>{$val}</td></tr>";
