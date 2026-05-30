@@ -32,10 +32,18 @@ class DashboardController extends Controller
         $prelistKpi = [];
         $prelistKomposisi = [];
         $prelistPerbandingan = [];
+        $prelistAnomali = [];
+        $prelistAnomaliSls = [];
+        $prelistAnomaliSummary = [];
+        $prelistMapKec = [];
         if ($prelistImported) {
             $prelistKpi = $this->prelist()->getKpiJatim();
             $prelistKomposisi = $this->prelist()->getKomposisiUsahaPerKab();
             $prelistPerbandingan = $this->prelist()->getPerbandinganSe2016();
+            $prelistAnomali = $this->prelist()->getAnomaliKecamatan('3509');
+            $prelistAnomaliSls = $this->prelist()->getAnomaliSls('3509');
+            $prelistAnomaliSummary = $this->prelist()->getAnomaliSummary('3509');
+            $prelistMapKec = $this->prelist()->getMapKecamatan('3509');
         }
 
         // Kecamatan filter
@@ -60,8 +68,12 @@ class DashboardController extends Controller
             'prelist_imported'    => $prelistImported,
             'prelist_kpi'         => $prelistKpi,
             'prelist_komposisi'   => $prelistKomposisi,
-            'prelist_perbandingan' => $prelistPerbandingan,
-            'js'                  => ['dashboard'],
+            'prelist_perbandingan'  => $prelistPerbandingan,
+            'prelist_anomali'       => $prelistAnomali,
+            'prelist_anomali_sls'   => $prelistAnomaliSls,
+            'prelist_anomali_summary' => $prelistAnomaliSummary,
+            'prelist_map_kec'       => $prelistMapKec,
+            'js'                    => ['dashboard', 'dashboard-map'],
         ]);
     }
 

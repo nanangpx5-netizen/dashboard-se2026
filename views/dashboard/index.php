@@ -185,6 +185,92 @@
         </div>
     </div>
 </div>
+<?php
+// ─── Anomali Detection Widget ──────────────────────────────────────────────
+$totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
+              + ($prelist_anomali_summary['sls_utp_0'] ?? 0)
+              + ($prelist_anomali_summary['sls_sbr_0'] ?? 0)
+              + ($prelist_anomali_summary['sls_muatan_tinggi'] ?? 0);
+?>
+
+<?php if ($prelist_imported && !empty($prelist_anomali_summary)): ?>
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-start border-danger border-3">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-exclamation-triangle me-1 text-danger"></i>Quality Gates — Indikator Anomali Data</small>
+                <span class="badge bg-<?= $totalAnomali > 0 ? 'danger' : 'success' ?> rounded-pill">
+                    <?= $totalAnomali ?> anomali
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">SLS dgn KK=0</small>
+                                <span class="fw-bold fs-5 text-danger"><?= number_format($prelist_anomali_summary['sls_kk_0'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">UTP=0 padahal ada KK</small>
+                                <span class="fw-bold fs-5 text-warning"><?= number_format($prelist_anomali_summary['sls_utp_0'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">SBR=0 padahal ada KK</small>
+                                <span class="fw-bold fs-5 text-warning"><?= number_format($prelist_anomali_summary['sls_sbr_0'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Muatan RS >200</small>
+                                <span class="fw-bold fs-5 text-danger"><?= number_format($prelist_anomali_summary['sls_muatan_tinggi'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (!empty($prelist_anomali)): ?>
+                <div class="table-responsive" style="max-height:160px">
+                    <table class="table table-sm small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Kecamatan</th>
+                                <th class="text-center">KK</th>
+                                <th class="text-center">UTP</th>
+                                <th class="text-center">Muatan</th>
+                                <th>Anomali</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($prelist_anomali as $a): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($a['nm_kec']) ?></td>
+                                <td class="text-center"><?= number_format($a['jml_kk']) ?></td>
+                                <td class="text-center"><?= number_format($a['utp']) ?></td>
+                                <td class="text-center"><?= number_format($a['muatan_rs']) ?></td>
+                                <td><span class="badge bg-danger bg-opacity-10 text-danger px-2"><?= htmlspecialchars($a['anomali']) ?></span></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php endif; ?>
 
 <div class="row g-3 mb-4">
@@ -414,6 +500,25 @@
         </div>
     </div>
 </div>
+
+<?php if ($prelist_imported && !empty($prelist_map_kec)): ?>
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-map me-1 text-danger"></i>Peta Sebaran Muatan per Kecamatan</small>
+                <small class="text-muted">Bubble size = total muatan RS</small>
+            </div>
+            <div class="card-body p-0">
+                <div id="mapPrelist" style="height:420px; border-radius:0 0 var(--bs-card-border-radius) var(--bs-card-border-radius);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+var mapKecamatan = <?= json_encode($prelist_map_kec, JSON_UNESCAPED_UNICODE) ?>;
+</script>
+<?php endif; ?>
 
 <script>
 var chartData = {

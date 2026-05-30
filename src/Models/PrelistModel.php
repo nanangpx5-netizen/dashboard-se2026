@@ -135,4 +135,85 @@ class PrelistModel
         $stmt->execute([$kdKec, $limit]);
         return $stmt->fetchAll();
     }
+
+    // ─── Anomali Detection ─────────────────────────────────────────────────
+
+    public function getAnomaliKecamatan(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT nm_kec, jml_kk, utp, subsektor, muatan_rs,
+                   ROUND(muatan_rs / NULLIF(jml_kk, 0), 2) AS rasio_muatan_kk,
+                   CASE
+                       WHEN jml_kk = 0 AND utp > 0 THEN 'KK=0 tapi UTP>0'
+                       WHEN muatan_rs = 0 THEN 'Muatan RS = 0'
+                       WHEN jml_kk > 0 AND muatan_rs / jml_kk > 5 THEN 'Rasio muatan/KK sangat tinggi'
+                       WHEN jml_kk > 0 AND muatan_rs / jml_kk < 0.1 THEN 'Rasio muatan/KK sangat rendah'
+                       ELSE NULL
+                   END AS anomali
+            FROM prelist_kecamatan
+            WHERE kd_kab = ?
+              AND (jml_kk = 0 AND utp > 0 OR muatan_rs = 0
+                   OR jml_kk > 0 AND (muatan_rs / jml_kk > 5 OR muatan_rs / jml_kk < 0.1))
+            ORDER BY muatan_rs DESC
+        ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetchAll();
+    }
+
+    public function getAnomaliSls(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT idsls, nm_kec, nm_desa, nama_sls, jml_kk, utp, sbr, muatan_rs,
+                   CASE
+                       WHEN jml_kk = 0 THEN 'KK=0'
+                       WHEN utp = 0 AND jml_kk > 0 THEN 'UTP=0 padahal ada KK'
+                       WHEN sbr = 0 AND jml_kk > 0 THEN 'SBR=0 padahal ada KK'
+                       WHEN muatan_rs > 200 THEN 'Muatan >200 (sangat tinggi)'
+                       ELSE NULL
+                   END AS anomali
+            FROM prelist_sls
+            WHERE kd_kab = ?
+              AND (jml_kk = 0
+                   OR muatan_rs > 200)
+            ORDER BY muatan_rs DESC
+            LIMIT 50
+        ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetchAll();
+    }
+
+    public function getAnomaliSummary(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT
+                COUNT(*) AS total_sls,
+                SUM(CASE WHEN jml_kk = 0 THEN 1 ELSE 0 END) AS sls_kk_0,
+                SUM(CASE WHEN utp = 0 AND jml_kk > 0 THEN 1 ELSE 0 END) AS sls_utp_0,
+                SUM(CASE WHEN sbr = 0 AND jml_kk > 0 THEN 1 ELSE 0 END) AS sls_sbr_0,
+                SUM(CASE WHEN muatan_rs > 200 THEN 1 ELSE 0 END) AS sls_muatan_tinggi,
+                SUM(CASE WHEN nama_sls IS NULL OR nama_sls = '' OR nama_sls = '-' THEN 1 ELSE 0 END) AS sls_tanpa_nama
+            FROM prelist_sls
+            WHERE kd_kab = ?
+        ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetch() ?: [];
+    }
+
+    // ─── Peta / Map Data ───────────────────────────────────────────────────
+
+    public function getMapKecamatan(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT
+                kd_kec, nm_kec,
+                jml_kk, utp, subsektor, muatan_rs,
+                ROUND(muatan_rs / NULLIF(jml_kk, 0), 2) AS rasio_muatan,
+                ROUND(muatan_rs / NULLIF(ppl, 0), 0) AS beban_ppl
+            FROM prelist_kecamatan
+            WHERE kd_kab = ?
+            ORDER BY nm_kec
+        ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetchAll();
+    }
 }
