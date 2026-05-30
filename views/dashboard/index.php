@@ -5,9 +5,9 @@
 
 <div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-primary fs-3"><i class="fas fa-map"></i></div>
+                <div class="flex-shrink-0 text-primary fs-3 glass-icon"><i class="fas fa-map"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Kecamatan</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_kecamatan']) ?></span>
@@ -16,9 +16,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-info fs-3"><i class="fas fa-location-dot"></i></div>
+                <div class="flex-shrink-0 text-info fs-3 glass-icon"><i class="fas fa-location-dot"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Desa</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_desa']) ?></span>
@@ -27,9 +27,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-secondary fs-3"><i class="fas fa-database"></i></div>
+                <div class="flex-shrink-0 text-secondary fs-3 glass-icon"><i class="fas fa-database"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total SLS</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_sls']) ?></span>
@@ -38,9 +38,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-success fs-3"><i class="fas fa-users"></i></div>
+                <div class="flex-shrink-0 text-success fs-3 glass-icon"><i class="fas fa-users"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total KK</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_kk']) ?></span>
@@ -49,9 +49,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-warning fs-3"><i class="fas fa-store"></i></div>
+                <div class="flex-shrink-0 text-warning fs-3 glass-icon"><i class="fas fa-store"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total Usaha</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_usaha']) ?></span>
@@ -60,9 +60,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card glass-card h-100 border-0">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-danger fs-3"><i class="fas fa-weight"></i></div>
+                <div class="flex-shrink-0 text-danger fs-3 glass-icon"><i class="fas fa-weight"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total Muatan</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_muatan']) ?></span>
@@ -74,7 +74,7 @@
 
 <div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-success border-3">
+        <div class="card glass-card h-100 border-0 border-start border-success border-3">
             <div class="card-body py-3 d-flex align-items-center gap-3">
                 <div class="flex-shrink-0 text-success fs-3"><i class="fas fa-user-check"></i></div>
                 <div>
@@ -85,7 +85,7 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-warning border-3">
+        <div class="card glass-card h-100 border-0 border-start border-warning border-3">
             <div class="card-body py-3 d-flex align-items-center gap-3">
                 <div class="flex-shrink-0 text-warning fs-3"><i class="fas fa-user-tie"></i></div>
                 <div>
@@ -96,7 +96,7 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-info border-3">
+        <div class="card glass-card h-100 border-0 border-start border-info border-3">
             <div class="card-body py-3 d-flex align-items-center gap-3">
                 <div class="flex-shrink-0 text-info fs-3"><i class="fas fa-people-group"></i></div>
                 <div>
@@ -108,8 +108,87 @@
     </div>
 </div>
 
+<?php if ($prelist_imported && !empty($prelist_kpi)): ?>
+<div class="card border-0 shadow-sm mb-4 border-start border-primary border-3">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <small class="fw-semibold"><i class="fas fa-clipboard-list me-1 text-primary"></i>Prelist SE2026 Jawa Timur</small>
+        <span class="badge bg-primary rounded-pill"><?= number_format($prelist_kpi['total_sls']) ?> SLS</span>
+    </div>
+    <div class="card-body py-2">
+        <div class="row g-2">
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">Kab/Kota</small>
+                <span class="fw-bold"><?= number_format($prelist_kpi['total_sls'] > 0 ? count($prelist_komposisi) : 0) ?></span>
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">Total KK</small>
+                <span class="fw-bold"><?= number_format($prelist_kpi['total_kk']) ?></span>
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">Total SLS</small>
+                <span class="fw-bold"><?= number_format($prelist_kpi['total_sls']) ?></span>
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">UTP</small>
+                <span class="fw-bold"><?= number_format($prelist_kpi['total_utp']) ?></span>
+            </div>
+        </div>
+        <hr class="my-2">
+        <div class="row g-2">
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">SE2016</small>
+                <span class="fw-bold small"><?= number_format($prelist_kpi['total_se2016']) ?></span>
+            </div>
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">UB</small>
+                <span class="fw-bold small text-danger"><?= number_format($prelist_kpi['total_ub']) ?></span>
+            </div>
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">UM</small>
+                <span class="fw-bold small text-warning"><?= number_format($prelist_kpi['total_um']) ?></span>
+            </div>
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">UMK</small>
+                <span class="fw-bold small text-primary"><?= number_format($prelist_kpi['total_umk']) ?></span>
+            </div>
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">PPL</small>
+                <span class="fw-bold small text-success"><?= number_format($prelist_kpi['total_ppl']) ?></span>
+            </div>
+            <div class="col-4 col-md-2">
+                <small class="text-muted d-block">PML</small>
+                <span class="fw-bold small text-info"><?= number_format($prelist_kpi['total_pml']) ?></span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
-    <div class="col-lg-8">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-primary"></i>Perbandingan SE2016 vs SE2026 per Kab/Kota</small>
+            </div>
+            <div class="card-body">
+                <canvas id="chartPrelistPerbandingan" height="320"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-success"></i>Komposisi Usaha SE2026</small>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartPrelistKomposisi" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-2">
                 <small class="fw-semibold"><i class="fas fa-chart-column me-1 text-primary"></i>Muatan per Kecamatan</small>
@@ -119,13 +198,36 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-5">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-success"></i>Beban Pencacah</small>
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-success"></i>Klasifikasi Wilayah</small>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartKlasifikasi" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-info"></i>Beban Pencacah</small>
             </div>
             <div class="card-body">
-                <canvas id="chartBebanPencacah" height="280"></canvas>
+                <canvas id="chartBebanPencacah" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-warning"></i>Distribusi Muatan Bangunan</small>
+            </div>
+            <div class="card-body">
+                <canvas id="chartBangunan" height="220"></canvas>
             </div>
         </div>
     </div>
@@ -181,7 +283,7 @@
     </div>
     <div class="card-body">
         <div class="row g-3 mb-3">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card border-0 bg-light">
                     <div class="card-body text-center py-3">
                         <small class="text-muted d-block">Referensi (master_sls)</small>
@@ -190,7 +292,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card border-0 bg-light">
                     <div class="card-body text-center py-3">
                         <small class="text-muted d-block">Database (sipw_import)</small>
@@ -199,7 +301,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card border-0 bg-light">
                     <div class="card-body text-center py-3">
                         <small class="text-muted d-block">Selisih</small>
@@ -207,17 +309,6 @@
                             <?= $perbandingan['selisih'] >= 0 ? '+' : '' ?><?= number_format($perbandingan['selisih']) ?>
                         </span>
                         <small class="text-muted d-block">SLS</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 bg-light">
-                    <div class="card-body text-center py-3">
-                        <small class="text-muted d-block">Duplikat (kode)</small>
-                        <span class="fw-bold fs-4 text-<?= $perbandingan['dup_kode'] > 0 ? 'warning' : 'success' ?>">
-                            <?= number_format($perbandingan['dup_kode']) ?>
-                        </span>
-                        <small class="text-muted d-block"><?= $perbandingan['dup_rows'] ?> baris duplikat</small>
                     </div>
                 </div>
             </div>
@@ -235,20 +326,20 @@
 
             <?php if (!empty($perbandingan['missing'])): ?>
             <div class="mt-2">
-                <small class="fw-semibold">Contoh SLS yang belum masuk database:</small>
+                <small class="fw-semibold">Daftar SLS yang belum masuk database:</small>
                 <div class="table-responsive" style="max-height:200px">
                     <table class="table table-sm mb-0 small">
                         <thead class="table-light">
                             <tr>
-                                <th>Kode</th>
-                                <th>SLS</th>
+                                <th>Kode SLS (16 digit)</th>
+                                <th>Nama SLS</th>
                                 <th>Desa</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($perbandingan['missing'] as $m): ?>
                             <tr>
-                                <td class="text-muted"><?= htmlspecialchars($m['kode'] ?? '-') ?></td>
+                                <td class="text-monospace small"><?= htmlspecialchars($m['kode'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($m['sls'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($m['desa'] ?? '-') ?></td>
                             </tr>
@@ -264,15 +355,6 @@
             Semua SLS di kecamatan ini sudah sesuai antara referensi dan database.
         </div>
         <?php endif; ?>
-
-        <?php if ($perbandingan['dup_kode'] > 0): ?>
-        <div class="alert alert-warning py-2 small mt-2 mb-0">
-            <i class="fas fa-copy me-1"></i>
-            Terdapat <strong><?= number_format($perbandingan['dup_kode']) ?> kode SLS duplikat</strong>
-            (<?= number_format($perbandingan['dup_rows']) ?> baris duplikat) dalam file referensi (rekap-sls.xlsx).
-            Database hanya menyimpan 1 baris per kode unik.
-        </div>
-        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>
@@ -281,7 +363,7 @@
     <div class="card-body py-2 px-3">
         <div class="d-flex align-items-center gap-2 small">
             <i class="fas fa-info-circle text-info"></i>
-            <span>File referensi <strong>rekap-sls.xlsx</strong> memiliki <strong>16.772 baris</strong> dengan <strong>234 baris duplikat</strong> (kode SLS sama). Database hanya menyimpan <strong>16.538 SLS unik</strong> — duplikat sudah otomatis dibersihkan saat import.</span>
+            <span>Data master resmi Semester 1 2025: <strong>16.772 SLS</strong> dari <strong>248 desa</strong> di <strong>31 kecamatan</strong>. Sumber: <code>msubsls_25_2_3509.xlsx</code> dan <code>mfd_25_2_3509.xlsx</code>.</span>
         </div>
     </div>
 </div>
@@ -299,7 +381,6 @@
                         <th>Kecamatan</th>
                         <th class="text-center">Total SLS</th>
                         <th class="text-center">Total Muatan</th>
-                        <th class="text-center">Assign</th>
                         <th class="text-center">Proses</th>
                         <th class="text-center">Selesai</th>
                         <th class="text-center">Progress</th>
@@ -313,7 +394,6 @@
                             <td><?= htmlspecialchars($row['label']) ?></td>
                             <td class="text-center"><?= number_format($row['total_sls']) ?></td>
                             <td class="text-center"><?= number_format($row['total_muatan']) ?></td>
-                            <td class="text-center"><?= number_format($row['assigned']) ?></td>
                             <td class="text-center"><?= number_format($row['proses']) ?></td>
                             <td class="text-center"><?= number_format($row['selesai']) ?></td>
                             <td class="text-center" style="min-width:120px">
@@ -327,7 +407,7 @@
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($progress_wilayah)): ?>
-                        <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data. Import SIPW terlebih dahulu.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada data. Import SIPW terlebih dahulu.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -348,6 +428,23 @@ var chartData = {
             borderRadius: 4,
         }]
     },
+    klasifikasi: {
+        labels: ['Perkotaan (Urban)', 'Pedesaan (Rural)'],
+        data: [
+            <?= (int) ($stats['total_sls_urban'] ?? 0) ?>,
+            <?= (int) ($stats['total_sls_rural'] ?? 0) ?>
+        ],
+        colors: ['rgba(13, 110, 253, 0.8)', 'rgba(25, 135, 84, 0.8)'],
+    },
+    bangunan: {
+        labels: ['BSTT', 'BSBTT', 'BSTTK', 'BKU'],
+        data: [
+            <?= (int) ($stats['total_bstt'] ?? 0) ?>,
+            <?= (int) ($stats['total_bsbtt'] ?? 0) ?>,
+            <?= (int) ($stats['total_bsttk'] ?? 0) ?>,
+            <?= (int) ($stats['total_bku'] ?? 0) ?>
+        ],
+    },
     bebanPencacah: {
         labels: <?= json_encode(array_column($beban_pencacah, 'username')) ?>,
         datasets: [{
@@ -366,9 +463,27 @@ var chartData = {
     },
     progress: {
         labels: <?= json_encode(array_column($progress_wilayah, 'label')) ?>,
-        assigned: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'assigned'))) ?>,
         proses: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'proses'))) ?>,
         selesai: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'selesai'))) ?>,
+    },
+    prelist: <?php if ($prelist_imported && !empty($prelist_perbandingan)): ?>{
+        perbandingan: {
+            labels: <?= json_encode(array_reverse(array_column($prelist_perbandingan, 'nm_kabkota'))) ?>,
+            se2016: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2016')))) ?>,
+            se2026: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2026')))) ?>,
+        },
+        komposisi: {
+            labels: ['Usaha Besar (UB)', 'Usaha Menengah (UM)', 'Usaha Mikro Kecil (UMK)'],
+            data: [
+                <?= (int) ($prelist_kpi['total_ub'] ?? 0) ?>,
+                <?= (int) ($prelist_kpi['total_um'] ?? 0) ?>,
+                <?= (int) ($prelist_kpi['total_umk'] ?? 0) ?>,
+            ],
+            colors: ['#dc3545', '#ffc107', '#0d6efd'],
+        },
     }
+<?php else: ?>
+    null
+<?php endif; ?>,
 };
 </script>

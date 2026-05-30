@@ -120,14 +120,11 @@ abstract class Controller
         $roles = (array) $roles;
 
         if (!in_array($user['role'], $roles, true)) {
-            http_response_code(403);
-            $viewPath = VIEW_PATH . '/errors/403.php';
-            if (is_file($viewPath)) {
-                require $viewPath;
-            } else {
-                echo '<h1>403 - Forbidden</h1>';
+            if ($this->request->isAjax()) {
+                $this->error('Akses ditolak. Halaman ini hanya untuk admin.', 403);
             }
-            exit;
+            Session::flash('error', 'Akses ditolak. Halaman ini hanya untuk admin.');
+            $this->redirect($this->roleHome());
         }
     }
 

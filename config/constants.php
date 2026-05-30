@@ -69,7 +69,7 @@ const PAGE_ACCESS = [
         'monitoring' => DASHBOARD_ROLES,
         'workload'   => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
         'wilayah'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI, ROLE_TASK_FORCE],
-        'petugas'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
+        'petugas'    => [ROLE_ADMIN],
         'audit'      => [ROLE_ADMIN, ROLE_OPERATOR],
         'report'     => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
     ],

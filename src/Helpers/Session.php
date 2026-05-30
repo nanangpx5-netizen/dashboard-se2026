@@ -109,7 +109,6 @@ final class Session
     {
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
-        return hash('sha256', $ua . '|' . ip2long($ip) . '|' . $accept);
+        return hash('sha256', $ua . '|' . ip2long($ip));
     }
 }

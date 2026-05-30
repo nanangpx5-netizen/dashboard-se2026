@@ -36,50 +36,64 @@ class AuditLogController extends Controller
 
     private function dataTable(): void
     {
-        $draw   = (int) ($_GET['draw'] ?? 0);
-        $start  = (int) ($_GET['start'] ?? 0);
-        $length = (int) ($_GET['length'] ?? 25);
+        try {
+            $draw   = (int) ($_GET['draw'] ?? 0);
+            $start  = max(0, (int) ($_GET['start'] ?? 0));
+            $length = (int) ($_GET['length'] ?? 25);
+            if ($length < 0) $length = 10000;
 
-        $order = [];
-        if (!empty($_GET['order'][0])) {
-            $order = [
-                'column' => $_GET['order'][0]['column'],
-                'dir'    => $_GET['order'][0]['dir'],
+            $order = [];
+            if (!empty($_GET['order'][0])) {
+                $order = [
+                    'column' => $_GET['order'][0]['column'],
+                    'dir'    => $_GET['order'][0]['dir'],
+                ];
+            }
+
+            $filters = [
+                'module'    => $_GET['module'] ?? '',
+                'user_id'   => $_GET['user_id'] ?? '',
+                'date_from' => $_GET['date_from'] ?? '',
+                'date_to'   => $_GET['date_to'] ?? '',
+                'search'    => $_GET['search']['value'] ?? '',
             ];
+
+            $recordsTotal    = $this->model->totalCount();
+            $recordsFiltered = $this->model->filteredCount($filters);
+            $data            = $this->model->getDataTable($filters, $start, $length, $order);
+
+            $rows = [];
+            foreach ($data as $r) {
+                $detailHtml = $this->formatDetail($r);
+                $rows[] = [
+                    'created_at'   => $r['created_at'],
+                    'username'     => htmlspecialchars((string) ($r['username'] ?? ''), ENT_QUOTES, 'UTF-8'),
+                    'action'       => $r['action'] ?? '',
+                    'action_label' => AuditLogModel::actionLabel($r['action'] ?? ''),
+                    'module'       => $r['module'] ?? '',
+                    'description'  => htmlspecialchars((string) ($r['description'] ?? ''), ENT_QUOTES, 'UTF-8'),
+                    'detail_html'  => $detailHtml,
+                ];
+            }
+
+            $this->json([
+                'draw'            => $draw,
+                'recordsTotal'    => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data'            => $rows,
+            ]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'draw'            => (int) ($_GET['draw'] ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'error'           => $e->getMessage(),
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
         }
-
-        $filters = [
-            'module'    => $_GET['module'] ?? '',
-            'user_id'   => $_GET['user_id'] ?? '',
-            'date_from' => $_GET['date_from'] ?? '',
-            'date_to'   => $_GET['date_to'] ?? '',
-            'search'    => $_GET['search']['value'] ?? '',
-        ];
-
-        $recordsTotal    = $this->model->totalCount();
-        $recordsFiltered = $this->model->filteredCount($filters);
-        $data            = $this->model->getDataTable($filters, $start, $length, $order);
-
-        $rows = [];
-        foreach ($data as $r) {
-            $detailHtml = $this->formatDetail($r);
-            $rows[] = [
-                'created_at'   => $r['created_at'],
-                'username'     => htmlspecialchars($r['username']),
-                'action'       => $r['action'],
-                'action_label' => AuditLogModel::actionLabel($r['action']),
-                'module'       => $r['module'],
-                'description'  => htmlspecialchars($r['description']),
-                'detail_html'  => $detailHtml,
-            ];
-        }
-
-        $this->json([
-            'draw'            => $draw,
-            'recordsTotal'    => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data'            => $rows,
-        ]);
     }
 
     private function formatDetail(array $r): string

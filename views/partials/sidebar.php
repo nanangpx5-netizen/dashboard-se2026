@@ -74,7 +74,7 @@ $isAdmin = $role === 'admin' || $role === 'operator';
             </li>
             <?php endif; ?>
 
-            <?php if ($isAdmin || $role === 'pegawai'): ?>
+            <?php if ($role === 'admin'): ?>
             <li class="nav-item mb-1">
                 <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'petugas' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=petugas">
                     <i class="fas fa-users me-2"></i><span>Petugas</span>

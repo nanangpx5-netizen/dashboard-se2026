@@ -1,10 +1,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0 fw-bold"><i class="fas fa-users me-2"></i>Manajemen Petugas</h5>
-    <?php if (in_array($current_user['role'] ?? '', ['admin', 'operator'])): ?>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreate">
         <i class="fas fa-plus me-1"></i>Tambah Petugas
     </button>
-    <?php endif; ?>
 </div>
 
 <?php if (!empty($flash)): ?>
@@ -50,21 +48,23 @@
                 <thead class="table-light">
                     <tr>
                         <th class="text-center" style="width:50px">No</th>
+                        <th>ID</th>
+                        <th>Nama Lengkap</th>
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Terakhir Login</th>
-                        <?php if (in_array($current_user['role'] ?? '', ['admin', 'operator'])): ?>
                         <th class="text-end" style="width:140px">Aksi</th>
-                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $u): ?>
                     <tr>
                         <td class="text-center text-muted"></td>
-                        <td class="fw-semibold"><?= htmlspecialchars($u['username']) ?></td>
+                        <td class="text-muted"><?= (int) $u['id'] ?></td>
+                        <td class="fw-semibold"><?= htmlspecialchars($u['nama_lengkap'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($u['username']) ?></td>
                         <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
                         <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : ($u['role'] === 'pml' ? 'warning text-dark' : ($u['role'] === 'pcl' ? 'success' : ($u['role'] === 'task_force' ? 'info' : 'primary'))) ?>"><?= htmlspecialchars(ROLE_LABELS[$u['role']] ?? $u['role']) ?></span></td>
                         <td>
@@ -75,7 +75,6 @@
                             <?php endif; ?>
                         </td>
                         <td><small class="text-muted"><?= htmlspecialchars($u['last_login_at'] ?? '-') ?></small></td>
-                        <?php if (in_array($current_user['role'] ?? '', ['admin', 'operator'])): ?>
                         <td class="text-end">
                             <button class="btn btn-outline-primary btn-sm py-0" onclick="editPetugas(<?= $u['id'] ?>, '<?= htmlspecialchars(addslashes($u['email'] ?? '')) ?>', '<?= $u['role'] ?>')">
                                 <i class="fas fa-edit"></i>
@@ -92,7 +91,6 @@
                                 </button>
                             </form>
                         </td>
-                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

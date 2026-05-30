@@ -12,6 +12,8 @@ class PetugasController extends Controller
 {
     public function index(): void
     {
+        $this->requireRole('admin');
+
         $action = $_GET['action'] ?? '';
 
         if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -35,12 +37,12 @@ class PetugasController extends Controller
 
         $role = $_GET['role'] ?? '';
         $params = [];
-        $sql = "SELECT id, email, username, role, status_akun, last_login_at, created_at FROM users WHERE 1=1";
-        if ($role !== '' && in_array($role, ['admin', 'operator', 'pegawai', 'mitra', 'pml', 'pcl', 'task_force'], true)) {
+        $sql = "SELECT id, email, username, nama_lengkap, role, status_akun, last_login_at, created_at FROM users WHERE 1=1";
+        if ($role !== '' && in_array($role, ['admin', 'operator', 'pegawai', 'mitra', 'pml', 'pcl', 'task_force', 'pj', 'panitia'], true)) {
             $sql .= " AND role = ?";
             $params[] = $role;
         }
-        $sql .= " ORDER BY role, username";
+        $sql .= " ORDER BY id";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);

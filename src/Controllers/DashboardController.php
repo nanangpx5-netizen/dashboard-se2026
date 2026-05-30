@@ -5,9 +5,20 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Helpers\Cache;
+use App\Models\PrelistModel;
 
 class DashboardController extends Controller
 {
+    private ?PrelistModel $prelist = null;
+
+    private function prelist(): PrelistModel
+    {
+        if ($this->prelist === null) {
+            $this->prelist = new PrelistModel();
+        }
+        return $this->prelist;
+    }
+
     public function index(): void
     {
         $pdo = Database::instance()->pdo();
@@ -15,6 +26,17 @@ class DashboardController extends Controller
         $stats = $this->getStats($pdo);
         $wilayahData = $this->getWilayahData($pdo);
         $bebanPencacah = $this->bebanPencacah($pdo);
+
+        // Prelist SE2026 data
+        $prelistImported = $this->prelist()->isImported();
+        $prelistKpi = [];
+        $prelistKomposisi = [];
+        $prelistPerbandingan = [];
+        if ($prelistImported) {
+            $prelistKpi = $this->prelist()->getKpiJatim();
+            $prelistKomposisi = $this->prelist()->getKomposisiUsahaPerKab();
+            $prelistPerbandingan = $this->prelist()->getPerbandinganSe2016();
+        }
 
         // Kecamatan filter
         $kdkecFilter = $_GET['kdkec'] ?? '';
@@ -35,6 +57,10 @@ class DashboardController extends Controller
             'kecamatan_list'      => $kecamatanList,
             'kdkec_filter'        => $kdkecFilter,
             'perbandingan'        => $perbandingan,
+            'prelist_imported'    => $prelistImported,
+            'prelist_kpi'         => $prelistKpi,
+            'prelist_komposisi'   => $prelistKomposisi,
+            'prelist_perbandingan' => $prelistPerbandingan,
             'js'                  => ['dashboard'],
         ]);
     }
@@ -44,12 +70,18 @@ class DashboardController extends Controller
         return Cache::remember('dashboard_stats', 60, function () use ($pdo): array {
             $sipw = $pdo->query("
                 SELECT
-                    COUNT(DISTINCT kdkec)               AS total_kecamatan,
-                    COUNT(DISTINCT CONCAT(kdkec, kddesa))     AS total_desa,
-                    COUNT(DISTINCT idsubsls)             AS total_sls,
-                    COALESCE(SUM(COALESCE(kk,0)),0)     AS total_kk,
-                    COALESCE(SUM(COALESCE(usaha,0)),0)  AS total_usaha,
-                    COALESCE(SUM(COALESCE(muatan,0)),0) AS total_muatan
+                    COUNT(DISTINCT kdkec)                         AS total_kecamatan,
+                    COUNT(DISTINCT CONCAT(kdkec, kddesa))         AS total_desa,
+                    COUNT(DISTINCT idsubsls)                      AS total_sls,
+                    COALESCE(SUM(COALESCE(kk,0)),0)               AS total_kk,
+                    COALESCE(SUM(COALESCE(usaha,0)),0)            AS total_usaha,
+                    COALESCE(SUM(COALESCE(muatan,0)),0)           AS total_muatan,
+                    COALESCE(SUM(COALESCE(btt,0)),0)              AS total_bstt,
+                    COALESCE(SUM(COALESCE(bbtt_nonusaha,0)),0)    AS total_bsbtt,
+                    COALESCE(SUM(COALESCE(bttk,0)),0)             AS total_bsttk,
+                    COALESCE(SUM(COALESCE(bku,0)),0)              AS total_bku,
+                    COALESCE(SUM(CASE WHEN klas=1 THEN 1 ELSE 0 END),0) AS total_sls_urban,
+                    COALESCE(SUM(CASE WHEN klas=2 THEN 1 ELSE 0 END),0) AS total_sls_rural
                 FROM sipw_import
             ")->fetch();
 
@@ -81,7 +113,7 @@ class DashboardController extends Controller
         return Cache::remember('dashboard_wilayah', 60, function () use ($pdo): array {
             return $pdo->query("
                 SELECT
-                    COALESCE(mfd.nama_kecamatan, wk.nama_kecamatan, CONCAT('Kec. ', si.kdkec)) AS label,
+                    COALESCE(mfd.nama_kecamatan, CONCAT('Kec. ', si.kdkec)) AS label,
                     si.kdkec,
                     COUNT(si.id)                            AS total_sls,
                     COALESCE(SUM(si.kk), 0)                 AS total_kk,
@@ -89,14 +121,16 @@ class DashboardController extends Controller
                     COALESCE(SUM(si.muatan), 0)             AS total_muatan,
                     COALESCE(SUM(si.btt), 0)                AS total_btt,
                     COALESCE(SUM(si.bku), 0)                AS total_bku,
-                    COALESCE(COUNT(sa.id), 0)               AS assigned,
+                    COALESCE(SUM(si.bbtt_nonusaha), 0)      AS total_bsbtt,
+                    COALESCE(SUM(si.bttk), 0)               AS total_bsttk,
+                    COALESCE(SUM(CASE WHEN si.klas=1 THEN 1 ELSE 0 END), 0) AS sls_urban,
+                    COALESCE(SUM(CASE WHEN si.klas=2 THEN 1 ELSE 0 END), 0) AS sls_rural,
                     COALESCE(SUM(CASE WHEN sa.status='proses'  THEN 1 ELSE 0 END), 0) AS proses,
                     COALESCE(SUM(CASE WHEN sa.status='selesai' THEN 1 ELSE 0 END), 0) AS selesai
                 FROM sipw_import si
                 LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
                 LEFT JOIN mfd_kec mfd ON mfd.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
-                LEFT JOIN wilayah_kerja wk ON wk.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
-                GROUP BY si.kdkec, mfd.urutan, mfd.nama_kecamatan, wk.nama_kecamatan
+                GROUP BY si.kdkec, mfd.urutan, mfd.nama_kecamatan
                 ORDER BY mfd.urutan
             ")->fetchAll();
         });
@@ -141,9 +175,7 @@ class DashboardController extends Controller
      */
     private function getPerbandingan(\PDO $pdo, string $kdkec): array
     {
-        // Cari nama kecamatan dari nmkec di sipw_import matching kode
-        $nmKec = $pdo->prepare("SELECT DISTINCT si.nmkec
-            FROM sipw_import si WHERE si.kdkec = ?");
+        $nmKec = $pdo->prepare("SELECT DISTINCT si.nmkec FROM sipw_import si WHERE si.kdkec = ?");
         $nmKec->execute([$kdkec]);
         $nmKec = $nmKec->fetchColumn();
 
@@ -160,31 +192,27 @@ class DashboardController extends Controller
             ];
         }
 
-        // Count di master_sls untuk kecamatan ini
         $masterSt = $pdo->prepare("SELECT COUNT(*) FROM master_sls WHERE kecamatan = ?");
         $masterSt->execute([$nmKec]);
         $masterCount = (int) $masterSt->fetchColumn();
 
-        // Count di sipw_import untuk kdkec ini
         $sipwSt = $pdo->prepare("SELECT COUNT(*) FROM sipw_import WHERE kdkec = ?");
         $sipwSt->execute([$kdkec]);
         $sipwCount = (int) $sipwSt->fetchColumn();
 
-        // Catatan: kode di master_sls (14 digit) berbeda format dengan idsubsls di sipw_import (16 digit),
-        // jadi tidak bisa JOIN langsung. Perbandingan dilakukan via count per kecamatan.
+        // JOIN langsung menggunakan idsubsls (16 digit) — master_sls.kode = sipw_import.idsubsls
         $missing = [];
         if ($masterCount > 0 && $masterCount !== $sipwCount) {
-            $missing = [[
-                'kode' => '—',
-                'sls'  => sprintf('Perbedaan %d SLS (format kode berbeda, tidak bisa ditampilkan detail)', abs($masterCount - $sipwCount)),
-                'desa' => '—',
-            ]];
+            $missSt = $pdo->prepare("
+                SELECT ms.kode, ms.sls, ms.desa
+                FROM master_sls ms
+                LEFT JOIN sipw_import si ON si.idsubsls = ms.kode
+                WHERE ms.kecamatan = ? AND si.id IS NULL
+                LIMIT 50
+            ");
+            $missSt->execute([$nmKec]);
+            $missing = $missSt->fetchAll();
         }
-
-        // master_sls punya UNIQUE KEY pada kode, jadi tidak ada duplikat di DB.
-        // Duplikat (234 baris) hanya ada di file Excel sumber (rekap-sls.xlsx).
-        $dupKode = 0;
-        $dupRows = 0;
 
         return [
             'kdkec'        => $kdkec,
@@ -193,8 +221,8 @@ class DashboardController extends Controller
             'sipw_count'   => $sipwCount,
             'selisih'      => $masterCount - $sipwCount,
             'missing'      => $missing,
-            'dup_kode'     => $dupKode,
-            'dup_rows'     => $dupRows,
+            'dup_kode'     => 0,
+            'dup_rows'     => 0,
         ];
     }
 }
