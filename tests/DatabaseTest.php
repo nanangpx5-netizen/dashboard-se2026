@@ -7,18 +7,18 @@ use PHPUnit\Framework\TestCase;
 
 final class DatabaseTest extends TestCase
 {
-    private \App\Helpers\Database $db;
+    private \App\Core\Database $db;
 
     protected function setUp(): void
     {
-        $this->db = \App\Helpers\Database::getInstance();
+        $this->db = \App\Core\Database::getInstance();
     }
 
     #[Test]
     public function getInstance_returns_singleton(): void
     {
-        $instance1 = \App\Helpers\Database::getInstance();
-        $instance2 = \App\Helpers\Database::getInstance();
+        $instance1 = \App\Core\Database::getInstance();
+        $instance2 = \App\Core\Database::getInstance();
         $this->assertSame($instance1, $instance2);
     }
 

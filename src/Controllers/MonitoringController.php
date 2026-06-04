@@ -32,10 +32,14 @@ class MonitoringController extends Controller
         $action = $_GET['action'] ?? '';
 
         match ($action) {
-            'data'    => $this->dataTable(),
-            'export'  => $this->exportExcel(),
-            'filters' => $this->filterDropdowns(),
-            default   => $this->showPage(),
+            'data'           => $this->dataTable(),
+            'export'         => $this->exportExcel(),
+            'filters'        => $this->filterDropdowns(),
+            'kecamatan-summary' => $this->kecamatanSummary(),
+            'desa-summary'   => $this->desaSummary(),
+            'sls-data'       => $this->slsData(),
+            'non-sls-data'   => $this->nonSlsData(),
+            default          => $this->showPage(),
         };
     }
 
@@ -44,18 +48,156 @@ class MonitoringController extends Controller
      */
     private function showPage(): void
     {
+        $scope = $this->getKecamatanScope();
+        $kdkec = '';
+        if ($scope !== null && strlen($scope) === 7) {
+            $kdkec = substr($scope, -3);
+        }
+
         $summary   = $this->model->getSummary();
         $kecamatan = $this->model->getKecamatan();
         $petugas   = $this->model->getPetugasLists();
+        $prelistKec = $this->model->getPrelistKecamatan('3509');
+
+        // Data untuk widget monitoring
+        $kecSummary   = $this->model->getKecamatanSummary();
+        $totalPrelist = $this->model->countPrelistSls('3509', '', $kdkec);
 
         $this->data['page_title'] = 'Monitoring Wilayah';
+        $this->data['kecamatan_scope'] = $scope;
         $this->render('monitoring/index', [
-            'summary'    => $summary,
-            'kecamatan'  => $kecamatan,
-            'pencacah'   => $petugas['pencacah'],
-            'pengawas'   => $petugas['pengawas'],
-            'task_force' => $petugas['task_force'],
-            'js'         => ['monitoring'],
+            'summary'       => $summary,
+            'kecamatan'     => $kecamatan,
+            'kec_summary'   => $kecSummary,
+            'total_prelist' => $totalPrelist,
+            'prelist_kec'   => $prelistKec,
+            'pencacah'      => $petugas['pencacah'],
+            'pengawas'      => $petugas['pengawas'],
+            'task_force'    => $petugas['task_force'],
+            'js'            => ['monitoring'],
+        ]);
+    }
+
+    /**
+     * AJAX JSON: summary per kecamatan
+     */
+    private function kecamatanSummary(): void
+    {
+        $filters = $this->applyKecamatanScope([
+            'kdkec' => $_GET['kdkec'] ?? '',
+        ]);
+        $data = $this->model->getKecamatanSummary($filters);
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * AJAX JSON: summary per desa (filter by kdkec)
+     */
+    private function desaSummary(): void
+    {
+        $kdkec = $this->getKecamatanScope() ?? ($_GET['kdkec'] ?? '');
+        if ($kdkec === '') {
+            $this->json(['success' => false, 'message' => 'Parameter kdkec wajib']);
+            return;
+        }
+        $data = $this->model->getDesaSummary($kdkec);
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * AJAX JSON: DataTables format untuk assigned SLS
+     */
+    private function slsData(): void
+    {
+        $draw   = (int) ($_GET['draw'] ?? 0);
+        $start  = (int) ($_GET['start'] ?? 0);
+        $length = (int) ($_GET['length'] ?? 25);
+
+        $filters = $this->applyKecamatanScope([
+            'kdkec'      => $_GET['kdkec'] ?? '',
+            'kddesa'     => $_GET['kddesa'] ?? '',
+            'pencacah'   => $_GET['pencacah'] ?? '',
+            'pengawas'   => $_GET['pengawas'] ?? '',
+            'task_force' => $_GET['task_force'] ?? '',
+            'status'     => $_GET['status'] ?? '',
+            'search'     => $_GET['search']['value'] ?? '',
+        ]);
+
+        $recordsTotal    = $this->model->countSlsAssigned($filters);
+        $recordsFiltered = $recordsTotal;
+        $data            = $this->model->getSlsAssigned($filters, $start, $length);
+
+        $rows = [];
+        foreach ($data as $r) {
+            $rows[] = [
+                'id'          => $r['id'],
+                'nmkec'       => htmlspecialchars($r['nmkec']),
+                'nmdesa'      => htmlspecialchars($r['nmdesa']),
+                'nmsls'       => htmlspecialchars($r['nmsls']),
+                'kk'          => (int) $r['kk'],
+                'usaha'       => (int) $r['usaha'],
+                'muatan'      => (int) $r['muatan'],
+                'pencacah'    => htmlspecialchars($r['pencacah']),
+                'pengawas'    => htmlspecialchars($r['pengawas']),
+                'task_force'  => htmlspecialchars($r['task_force']),
+                'status'      => $r['status'],
+                'status_badge' => $this->statusBadge($r['status']),
+                'tgl_assign'  => $r['tgl_assign'] ?? '-',
+            ];
+        }
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $rows,
+        ]);
+    }
+
+    /**
+     * AJAX JSON: DataTables format untuk prelist SLS (non-SLS)
+     */
+    private function nonSlsData(): void
+    {
+        $draw   = (int) ($_GET['draw'] ?? 0);
+        $start  = (int) ($_GET['start'] ?? 0);
+        $length = (int) ($_GET['length'] ?? 25);
+        $search = $_GET['search']['value'] ?? '';
+
+        // Extract kd_kec (3-digit) from session scope (7-digit, e.g. '3509180' → '180')
+        $kdkec = '';
+        $scope = $this->getKecamatanScope();
+        if ($scope !== null && strlen($scope) === 7) {
+            $kdkec = substr($scope, -3);
+        }
+
+        $recordsTotal    = $this->model->countPrelistSls('3509', '', $kdkec);
+        $recordsFiltered = $this->model->countPrelistSls('3509', $search, $kdkec);
+        $data            = $this->model->getPrelistSls('3509', $search, $start, $length, $kdkec);
+
+        $rows = [];
+        foreach ($data as $r) {
+            $rows[] = [
+                'idsls'           => htmlspecialchars($r['idsls']),
+                'kd_kec'          => htmlspecialchars($r['kd_kec']),
+                'nm_kec'          => htmlspecialchars($r['nm_kec']),
+                'nm_desa'         => htmlspecialchars($r['nm_desa']),
+                'nama_sls'        => htmlspecialchars($r['nama_sls']),
+                'jml_kk'          => (int) ($r['jml_kk'] ?? 0),
+                'utp'             => (int) ($r['utp'] ?? 0),
+                'muatan_rs'       => (int) ($r['muatan_rs'] ?? 0),
+                'subsektor'       => (int) ($r['subsektor'] ?? 0),
+                'usaha_se2016'    => (int) ($r['usaha_se2016'] ?? 0),
+                'usaha_wilkerstat'=> (int) ($r['usaha_wilkerstat'] ?? 0),
+                'imported_at'     => $r['imported_at'] ?? '-',
+            ];
+        }
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $rows,
         ]);
     }
 
@@ -79,14 +221,14 @@ class MonitoringController extends Controller
         }
 
         // Filters dari query string
-        $filters = [
+        $filters = $this->applyKecamatanScope([
             'kdkec'      => $_GET['kdkec'] ?? '',
             'kddesa'     => $_GET['kddesa'] ?? '',
             'pencacah'   => $_GET['pencacah'] ?? '',
             'pengawas'   => $_GET['pengawas'] ?? '',
             'task_force' => $_GET['task_force'] ?? '',
             'status'     => $_GET['status'] ?? '',
-        ];
+        ]);
 
         $recordsTotal    = $this->model->totalCount();
         $recordsFiltered = $this->model->filteredCount($filters, $search);
@@ -123,14 +265,14 @@ class MonitoringController extends Controller
      */
     private function exportExcel(): void
     {
-        $filters = [
+        $filters = $this->applyKecamatanScope([
             'kdkec'      => $_GET['kdkec'] ?? '',
             'kddesa'     => $_GET['kddesa'] ?? '',
             'pencacah'   => $_GET['pencacah'] ?? '',
             'pengawas'   => $_GET['pengawas'] ?? '',
             'task_force' => $_GET['task_force'] ?? '',
             'status'     => $_GET['status'] ?? '',
-        ];
+        ]);
 
         $data = $this->model->exportAll($filters);
 
@@ -171,7 +313,7 @@ class MonitoringController extends Controller
      */
     private function filterDropdowns(): void
     {
-        $kdkec = $_GET['kdkec'] ?? '';
+        $kdkec = $this->getKecamatanScope() ?? ($_GET['kdkec'] ?? '');
         if ($kdkec === '') {
             $this->json(['success' => false, 'message' => 'kdkec required']);
             return;

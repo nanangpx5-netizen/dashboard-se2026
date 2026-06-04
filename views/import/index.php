@@ -1,8 +1,49 @@
+<?php
+/**
+ * Helper: render pagination links untuk Riwayat Import
+ */
+function renderImportPagination(int $page, int $totalPages, int $perPage): void
+{
+    if ($totalPages <= 1) return;
+    $qs = $_GET;
+    unset($qs['hal']);
+    $base = '?' . http_build_query(array_merge($qs, ['per_page' => $perPage]));
+?>
+<nav>
+    <ul class="pagination pagination-sm justify-content-center my-2">
+        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $base ?>&hal=1">&laquo;</a>
+        </li>
+        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $base ?>&hal=<?= max(1, $page - 1) ?>">&lsaquo;</a>
+        </li>
+        <?php
+        $start = max(1, $page - 2);
+        $end = min($totalPages, $page + 2);
+        if ($start > 1) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        for ($i = $start; $i <= $end; $i++):
+        ?>
+        <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+            <a class="page-link" href="<?= $base ?>&hal=<?= $i ?>"><?= $i ?></a>
+        </li>
+        <?php endfor;
+        if ($end < $totalPages) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        ?>
+        <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $base ?>&hal=<?= min($totalPages, $page + 1) ?>">&rsaquo;</a>
+        </li>
+        <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $base ?>&hal=<?= $totalPages ?>">&raquo;</a>
+        </li>
+    </ul>
+</nav>
+<?php } ?>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0 fw-bold"><i class="fas fa-file-import me-2"></i>Import SIPW</h5>
     <span>
         <small class="text-muted me-2">Data existing:</small>
-        <span class="badge bg-primary"><?= number_format($total_sls) ?> SLS</span>
+        <span class="badge badge-se2026"><?= number_format($total_sls) ?> SLS</span>
         <span class="badge bg-info"><?= number_format($total_kec) ?> Kec</span>
         <span class="badge bg-secondary"><?= number_format($total_desa) ?> Desa</span>
         <span class="badge bg-success"><?= number_format($total_muatan) ?> Muatan</span>
@@ -63,7 +104,7 @@
                 <span class="badge bg-light text-dark me-2">
                     <i class="fas fa-file me-1"></i><?= htmlspecialchars($pv['nama_file']) ?>
                 </span>
-                <span class="badge bg-primary"><?= number_format($pv['total_baris']) ?> baris</span>
+                <span class="badge badge-se2026"><?= number_format($pv['total_baris']) ?> baris</span>
                 <span class="badge bg-secondary"><?= number_format($pv['ukuran_file'] / 1024, 1) ?> KB</span>
             </div>
         </div>
@@ -147,7 +188,7 @@
                     <i class="fas fa-info-circle me-1"></i>
                     Menampilkan <?= number_format(min(50, $pv['total_baris'])) ?> dari <?= number_format($pv['total_baris']) ?> baris.
                     <?php if ($pv['total_baris'] > 50): ?>
-                        <a href="#" onclick="loadPreviewPage(2); return false;" class="text-primary">Muat lebih banyak</a>
+                        <a href="#" onclick="loadPreviewPage(2); return false;" class="text-se2026">Muat lebih banyak</a>
                     <?php endif; ?>
                 </small>
                 <div class="d-flex gap-2">
@@ -186,7 +227,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-se2026 w-100">
                             <i class="fas fa-upload me-1"></i>Upload &amp; Preview
                         </button>
                     </div>
@@ -226,7 +267,24 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
         <span class="fw-semibold small"><i class="fas fa-history me-1"></i>Riwayat Import</span>
-        <small class="text-muted"><?= count($history) ?> record</small>
+        <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">
+                <?= number_format($history_total ?? 0) ?> total
+                <?php if (($total_pages ?? 1) > 1): ?>
+                    &middot; hal <?= $page_num ?? 1 ?> / <?= $total_pages ?? 1 ?>
+                <?php endif; ?>
+            </small>
+            <form method="GET" action="?page=dashboard&sub=import" class="d-inline-flex align-items-center gap-1">
+                <input type="hidden" name="page" value="dashboard">
+                <input type="hidden" name="sub" value="import">
+                <select name="per_page" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                    <option value="10"  <?= ($per_page ?? 10) === 10  ? 'selected' : '' ?>>10</option>
+                    <option value="25"  <?= ($per_page ?? 10) === 25  ? 'selected' : '' ?>>25</option>
+                    <option value="50"  <?= ($per_page ?? 10) === 50  ? 'selected' : '' ?>>50</option>
+                    <option value="100" <?= ($per_page ?? 10) === 100 ? 'selected' : '' ?>>100</option>
+                </select>
+            </form>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -275,6 +333,17 @@
             </table>
         </div>
     </div>
+    <?php if (($total_pages ?? 1) > 1): ?>
+    <div class="card-footer bg-white py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Menampilkan <?= (($page_num - 1) * $per_page) + 1 ?>–<?= min($page_num * $per_page, $history_total) ?>
+                dari <?= number_format($history_total) ?> record
+            </small>
+            <?php renderImportPagination($page_num, $total_pages, $per_page); ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>

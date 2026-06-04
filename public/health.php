@@ -15,7 +15,7 @@ declare(strict_types=1);
 error_reporting(0);
 ini_set('display_errors', '0');
 
-require_once __DIR__ . '/../app/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 $format = $_GET['format'] ?? 'json';
 $start  = microtime(true);
@@ -29,7 +29,7 @@ $checks['php_version'] = PHP_VERSION;
 $dbOk = false;
 $dbTime = 0;
 try {
-    $db     = \App\Helpers\Database::getInstance();
+    $db     = \App\Core\Database::getInstance();
     $dbOk   = $db->isConnected();
     $dbTime = round((microtime(true) - $start) * 1000, 1);
 } catch (\Throwable $e) {

@@ -41,13 +41,15 @@ final class Backup
         ]);
     }
 
+    private const CHUNK_SIZE = 500;
+
     /**
      * Buat rollback point sebelum import SIPW batch.
-     * Menyimpan snapshot data sipw_import yang akan terpengaruh.
+     * Menggunakan streaming cursor + chunking untuk menghindari OOM pada 16K+ rows.
      *
      * @param string $batchId    Batch ID dari dash_import_log
      * @param array  $affectedIds  Array ID dari sipw_import yang akan di-UPSERT
-     * @return int ID rollback point
+     * @return int ID rollback point (last insert)
      */
     public static function createRollbackPoint(
         string $batchId,
@@ -67,38 +69,46 @@ final class Backup
             return 0;
         }
 
-        // Ambil snapshot data lama
-        $placeholders = implode(',', array_fill(0, $rowCount, '?'));
-        $stmt = $pdo->prepare("
-            SELECT * FROM sipw_import WHERE id IN ({$placeholders})
-        ");
-        $stmt->execute(array_values($affectedIds));
-        $rows = $stmt->fetchAll();
+        $chunks = array_chunk($affectedIds, self::CHUNK_SIZE);
+        $lastId = 0;
 
-        $oldData = [];
-        foreach ($rows as $r) {
-            $id = (int) $r['id'];
-            unset($r['id']); // id tidak perlu di-restore
-            $oldData[$id] = $r;
-        }
-
-        $stmt = $pdo->prepare("
+        $insertStmt = $pdo->prepare("
             INSERT INTO dash_rollback_points
                 (batch_id, operation, table_name, row_ids, old_data,
                  row_count, created_by, ip_address, note)
             VALUES (?, 'IMPORT_SIPW', 'sipw_import', ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([
-            $batchId,
-            json_encode($affectedIds),
-            json_encode($oldData),
-            $rowCount,
-            $userId,
-            $ip,
-            $note,
-        ]);
 
-        return (int) $pdo->lastInsertId();
+        foreach ($chunks as $chunkIds) {
+            $placeholders = implode(',', array_fill(0, count($chunkIds), '?'));
+
+            // Unbuffered query + row-by-row fetch to avoid OOM
+            $selectStmt = $pdo->prepare("
+                SELECT * FROM sipw_import WHERE id IN ({$placeholders})
+            ", [\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => false]);
+            $selectStmt->execute(array_values($chunkIds));
+
+            $oldData = [];
+            while ($r = $selectStmt->fetch()) {
+                $id = (int) $r['id'];
+                unset($r['id']);
+                $oldData[$id] = $r;
+            }
+
+            $insertStmt->execute([
+                $batchId,
+                json_encode($chunkIds),
+                json_encode($oldData),
+                count($chunkIds),
+                $userId,
+                $ip,
+                $note,
+            ]);
+
+            $lastId = (int) $pdo->lastInsertId();
+        }
+
+        return $lastId;
     }
 
     /**

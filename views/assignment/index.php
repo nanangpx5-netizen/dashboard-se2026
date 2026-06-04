@@ -64,6 +64,9 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
         <a href="?page=dashboard&sub=assignment&action=template" class="btn btn-outline-success btn-sm">
             <i class="fas fa-download me-1"></i>Template
         </a>
+        <a href="?page=dashboard&sub=assignment&action=download<?= !empty($filters['kdkec']) ? '&kdkec=' . urlencode($filters['kdkec']) : '' ?>" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-file-excel me-1"></i>Download SLS
+        </a>
         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportAssign">
             <i class="fas fa-file-excel me-1"></i>Import Excel
         </button>
@@ -105,7 +108,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
     <div class="col-md-2 col-4">
         <div class="card border-0 shadow-sm text-center py-2 h-100">
             <small class="text-muted">Proses</small>
-            <span class="fw-bold fs-5 text-primary"><?= number_format($summary['status_proses'] ?? 0) ?></span>
+            <span class="fw-bold fs-5 text-se2026"><?= number_format($summary['status_proses'] ?? 0) ?></span>
         </div>
     </div>
     <div class="col-md-2 col-4">
@@ -132,6 +135,19 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
             <input type="hidden" name="tab" id="filterTab" value="<?= htmlspecialchars($tab) ?>">
             <div class="col-md-3">
                 <label class="form-label small mb-0">Kecamatan</label>
+                <?php if (!empty($kecamatan_scope)): ?>
+                    <?php
+                    $scopeKecName = '';
+                    foreach ($kecamatan as $kk) {
+                        if (substr($kecamatan_scope, -3) === $kk['kdkec']) {
+                            $scopeKecName = $kk['nmkec'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <input type="hidden" name="kdkec" value="<?= htmlspecialchars(substr($kecamatan_scope, -3)) ?>">
+                    <input type="text" class="form-control form-control-sm" value="<?= htmlspecialchars($scopeKecName) ?>" readonly disabled>
+                <?php else: ?>
                 <select name="kdkec" class="form-select form-select-sm" onchange="filterChanged()">
                     <option value="">Semua Kecamatan</option>
                     <?php foreach ($kecamatan as $k): ?>
@@ -141,6 +157,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-0">Desa</label>
@@ -178,12 +195,35 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-sm btn-primary flex-fill"><i class="fas fa-search"></i></button>
+                <button type="submit" class="btn btn-sm btn-se2026 flex-fill"><i class="fas fa-search"></i></button>
                 <a href="?page=dashboard&sub=assignment" class="btn btn-sm btn-outline-secondary flex-fill">Reset</a>
             </div>
         </form>
     </div>
 </div>
+
+<?php
+$activeKec = null;
+foreach ($kecamatan as $k) {
+    if (($filters['kdkec'] ?? '') === $k['kdkec']) {
+        $activeKec = $k;
+        break;
+    }
+}
+?>
+<?php if ($activeKec): ?>
+<div class="card border-0 shadow-sm mb-3" id="suggestPanel" data-kdkec="<?= htmlspecialchars($activeKec['kdkec']) ?>" data-nmkec="<?= htmlspecialchars($activeKec['nmkec']) ?>">
+    <div class="card-header bg-se2026-gradient text-white py-2 d-flex justify-content-between align-items-center">
+        <small class="fw-semibold">
+            <i class="fas fa-lightbulb me-1"></i>Saran Petugas untuk Kec. <?= htmlspecialchars($activeKec['nmkec']) ?>
+        </small>
+        <span class="badge bg-white text-se2026" id="suggestCount">…</span>
+    </div>
+    <div class="card-body py-2" id="suggestBody">
+        <div class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin me-1"></i>Memuat saran…</div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- ─── Tabs ──────────────────────────────────────────────────────── -->
 <ul class="nav nav-tabs mb-3" id="assignTab">
@@ -231,9 +271,9 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                                 <td><?= htmlspecialchars($r['nmdesa'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($r['nmkec'] ?? '-') ?></td>
                                 <td class="text-center"><?= number_format($r['muatan'] ?? 0) ?></td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success"><?= htmlspecialchars($r['pencacah'] ?? '-') ?></span></td>
-                                <td><span class="badge bg-warning bg-opacity-10 text-warning"><?= htmlspecialchars($r['pengawas'] ?? '-') ?></span></td>
-                                <td><span class="badge bg-info bg-opacity-10 text-info"><?= htmlspecialchars($r['task_force'] ?? '-') ?></span></td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success"><?= htmlspecialchars($r['pencacah_nama'] ?: $r['pencacah'] ?: '-') ?></span></td>
+                                <td><span class="badge bg-warning bg-opacity-10 text-warning"><?= htmlspecialchars($r['pengawas_nama'] ?: $r['pengawas'] ?: '-') ?></span></td>
+                                <td><span class="badge bg-info bg-opacity-10 text-info"><?= htmlspecialchars($r['task_force_nama'] ?: $r['task_force'] ?: '-') ?></span></td>
                                 <td class="text-center">
                                     <form method="POST" action="?page=dashboard&sub=assignment&action=status" class="d-inline">
                                         <?= $csrf_field ?? '' ?>
@@ -283,6 +323,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                                 <th>Ketua SLS</th>
                                 <th class="text-center">KK</th>
                                 <th class="text-center">BTT</th>
+                                <th class="text-center">Usaha</th>
                                 <th class="text-center">Muatan</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
@@ -298,16 +339,17 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                                 <td><?= htmlspecialchars($r['nama_ketua'] ?? '-') ?></td>
                                 <td class="text-center"><?= number_format($r['kk'] ?? 0) ?></td>
                                 <td class="text-center"><?= number_format($r['btt'] ?? 0) ?></td>
+                                <td class="text-center"><?= number_format($r['usaha'] ?? 0) ?></td>
                                 <td class="text-center fw-semibold"><?= number_format($r['muatan'] ?? 0) ?></td>
                                 <td class="text-center">
-                                    <button class="btn btn-primary btn-sm py-0" onclick="openAssign(<?= $r['id'] ?>, '<?= htmlspecialchars(addslashes($r['nmsls'] ?? '')) ?>', '<?= htmlspecialchars(addslashes($r['nmdesa'] ?? '')) ?>')">
+                                    <button class="btn btn-se2026 btn-sm py-0" onclick="openAssign(<?= $r['id'] ?>, '<?= htmlspecialchars(addslashes($r['nmsls'] ?? '')) ?>', '<?= htmlspecialchars(addslashes($r['nmdesa'] ?? '')) ?>')">
                                         <i class="fas fa-user-plus me-1"></i>Assign
                                     </button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
                             <?php if (empty($unassigned)): ?>
-                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -343,7 +385,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                             <select name="pencacah_id" class="form-select form-select-sm petugas-select" data-role="pcl">
                                 <option value="">-- Pilih PCL --</option>
                                 <?php foreach ($pcl_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -352,7 +394,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                             <select name="pengawas_id" class="form-select form-select-sm petugas-select" data-role="pml">
                                 <option value="">-- Pilih PML --</option>
                                 <?php foreach ($pml_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -361,7 +403,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                             <select name="task_force_id" class="form-select form-select-sm petugas-select" data-role="tf">
                                 <option value="">-- Pilih Task Force --</option>
                                 <?php foreach ($tf_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -369,7 +411,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i>Simpan</button>
+                    <button type="submit" class="btn btn-sm btn-se2026"><i class="fas fa-save me-1"></i>Simpan</button>
                 </div>
             </div>
         </form>
@@ -393,28 +435,28 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Pencacah (PCL)</label>
-                            <select name="pencacah_id" id="edit_pencacah_id" class="form-select form-select-sm">
+                            <select name="pencacah_id" id="edit_pencacah_id" class="form-select form-select-sm petugas-select" data-role="pcl">
                                 <option value="">-- Pilih PCL --</option>
                                 <?php foreach ($pcl_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Pengawas (PML)</label>
-                            <select name="pengawas_id" id="edit_pengawas_id" class="form-select form-select-sm">
+                            <select name="pengawas_id" id="edit_pengawas_id" class="form-select form-select-sm petugas-select" data-role="pml">
                                 <option value="">-- Pilih PML --</option>
                                 <?php foreach ($pml_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Task Force</label>
-                            <select name="task_force_id" id="edit_task_force_id" class="form-select form-select-sm">
+                            <select name="task_force_id" id="edit_task_force_id" class="form-select form-select-sm petugas-select" data-role="tf">
                                 <option value="">-- Pilih Task Force --</option>
                                 <?php foreach ($tf_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -422,7 +464,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i>Simpan</button>
+                    <button type="submit" class="btn btn-sm btn-se2026"><i class="fas fa-save me-1"></i>Simpan</button>
                 </div>
             </div>
         </form>
@@ -549,7 +591,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
                         <tbody>
                             <?php foreach ($petugas_load as $pl): ?>
                             <tr>
-                                <td><?= htmlspecialchars($pl['username']) ?></td>
+                                <td><?= htmlspecialchars($pl['nama_lengkap'] ?: $pl['username']) ?></td>
                                 <td><span class="badge bg-<?= $pl['role'] === 'admin' ? 'danger' : ($pl['role'] === 'pml' ? 'warning text-dark' : ($pl['role'] === 'pcl' ? 'success' : 'info')) ?>"><?= $pl['role'] ?></span></td>
                                 <td class="text-center"><?= number_format($pl['as_pencacah']) ?></td>
                                 <td class="text-center"><?= number_format($pl['as_pengawas']) ?></td>

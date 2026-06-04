@@ -209,4 +209,65 @@ class ReportModel
             ")->fetchAll();
         });
     }
+
+    // ─── 7. REKAP PER TASK FORCE ─────────────────────────────────────────
+
+    public function rekapTaskForce(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                u.id,
+                u.username,
+                COUNT(sa.id)                                               AS total_sls,
+                COALESCE(SUM(CASE WHEN sa.status = 'selesai' THEN 1 ELSE 0 END), 0) AS selesai,
+                COALESCE(SUM(CASE WHEN sa.status = 'proses'  THEN 1 ELSE 0 END), 0) AS proses,
+                COALESCE(SUM(CASE WHEN sa.status = 'belum'   THEN 1 ELSE 0 END), 0) AS belum,
+                COALESCE(SUM(si.muatan), 0)                               AS total_muatan,
+                GROUP_CONCAT(DISTINCT si.nmkec ORDER BY si.nmkec SEPARATOR ', ')     AS kecamatan
+            FROM users u
+            JOIN sipw_assignment sa ON sa.task_force_id = u.id
+            JOIN sipw_import si ON si.id = sa.sipw_id
+            WHERE u.status_akun = 'active' AND u.role = 'task_force'
+            GROUP BY u.id, u.username
+            ORDER BY total_sls DESC
+        ")->fetchAll();
+    }
+
+    // ─── 8. PRELIST SUMMARY ──────────────────────────────────────────────
+
+    public function prelistSummary(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                COUNT(DISTINCT kd_kab)          AS total_kabkota,
+                COUNT(DISTINCT kd_kec)          AS total_kecamatan,
+                COUNT(DISTINCT iddesa)          AS total_desa,
+                COUNT(*)                        AS total_sls,
+                COALESCE(SUM(jml_kk), 0)        AS total_kk,
+                COALESCE(SUM(utp), 0)           AS total_utp,
+                COALESCE(SUM(muatan_rs), 0)     AS total_muatan
+            FROM prelist_sls
+            WHERE kd_kab = '3509'
+        ")->fetch();
+    }
+
+    // ─── 9. PRELIST PER KECAMATAN ────────────────────────────────────────
+
+    public function prelistPerKec(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                ps.nm_kec                                           AS kecamatan,
+                COUNT(*)                                            AS total_sls,
+                COALESCE(SUM(ps.jml_kk), 0)                         AS total_kk,
+                COALESCE(SUM(ps.utp), 0)                            AS total_utp,
+                COALESCE(SUM(ps.muatan_rs), 0)                      AS total_muatan,
+                COALESCE(SUM(ps.usaha_se2016), 0)                   AS usaha_se2016,
+                COUNT(DISTINCT ps.iddesa)                           AS total_desa
+            FROM prelist_sls ps
+            WHERE ps.kd_kab = '3509'
+            GROUP BY ps.nm_kec
+            ORDER BY ps.nm_kec
+        ")->fetchAll();
+    }
 }

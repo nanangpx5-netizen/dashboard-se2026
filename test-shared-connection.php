@@ -10,9 +10,9 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/app/bootstrap.php';
+require __DIR__ . '/src/bootstrap.php';
 
-$db = \App\Helpers\Database::getInstance();
+$db = \App\Core\Database::getInstance();
 
 $PASS = "\033[32m✓ PASS\033[0m";
 $FAIL = "\033[31m✗ FAIL\033[0m";

@@ -1,32 +1,87 @@
 ## Goal
-Integrate official prelist SE2026 data into dashboard and fix all post-integration errors across affected pages.
+Integrate official prelist SE2026 data, apply audit fixes, add petugas/assignment management, implement SE2026 orange theme, build monitoring widgets, improve dashboard readability, enhance report page with previews/exports, **remove dual namespace (PSR-4 single source)**, **add global CSP + CI/CD**, **cleanup rollback bloat**, **add unit tests**, and **add kecamatan scope (1:1) for pegawai role** (filter assignment/monitoring/workload ke 1 kecamatan per pegawai, server-side enforced).
 
 ## Constraints & Preferences
-- PSR-4 autoload maps `App\` to `src/` and `app/`
-- OpenSpout 4.28.5 for streaming XLSX import (30 MB file)
+- PSR-4 autoload maps `App\` to `src/` only (legacy `app/` directory removed)
+- OpenSpout 4.28.5 — always call `setTempFolder()` to writable project path, never `sys_get_temp_dir()`
 - Role system: admin, operator, pegawai, pml, pcl, task_force, mitra
-- Session fingerprint security must not break AJAX requests
+- Session fingerprint security must not break AJAX
+- jQuery 3.7 + Bootstrap 5.3 + DataTables 1.13 throughout
+- Monitoring widget uses fetch API with client pagination (MONITORING_PER_PAGE=10) + search debounce (400ms) + auto-refresh (30s)
+- Recommendation implementation scripts use **dry-run default** — pass `--execute` to apply changes
+- `Database` class has no `prepare()`/`exec()` — use `$db->query($sql, $params)` for DML, `$pdo = $db->pdo()` for DDL/transaction
+- MySQL 8.0.30 does NOT support `ADD COLUMN IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` — use `information_schema.columns` check + DELIMITER/PROCEDURE pattern
+- All routes registered in `index.php` `controllerMap` array under `dashboard` key with sub-name
+- Sidebar visibility per role: admin/operator see all, others see by role
+- Auto-script loading: layout reads `$js` array in view data — must be `['script-name']` format
+- CSP header required on all responses (set in `App::boot()` and `src/bootstrap.php`)
+- PHP 8.2+ required, MySQL 8.0+ recommended
 
 ## Progress
 ### Done
-- **Audit DataTables "Invalid JSON" root cause fixed**: `Session::generateFingerprint()` included `HTTP_ACCEPT` header — browser sends `Accept: text/html,...` on page load vs `Accept: */*` on XHR/fetch, causing fingerprint mismatch, session destruction, and HTML redirect instead of JSON. Removed `HTTP_ACCEPT` from fingerprint hash in `src/Helpers/Session.php:112`
-- **AuthMiddleware AJAX fallback added**: `BaseMiddleware::redirectToLogin()`, `forbidden()`, `unauthorized()` now return JSON 401/403 when `X-Requested-With: XMLHttpRequest` is present
-- **DataTable edge case handled**: `AuditLogController.dataTable()` now wraps in try-catch, clamps `$start >= 0`, handles `length=-1` (→ 10,000), casts nullable columns safely
-- **Petugas page restricted to admin-only**: `PAGE_ACCESS['dashboard']['petugas']` changed to `[ROLE_ADMIN]`; `PetugasController::index()` calls `$this->requireRole('admin')` defense-in-depth; sidebar link hidden for non-admin; `requireRole()` in base Controller now redirects with flash error instead of blank 403
-- **Petugas view updated**: shows ID + Nama Lengkap columns; `nama_lengkap` added to SQL SELECT; ORDER BY `id` for natural listing
-- **Prelist SQL tables created**: `prelist_kabkota`, `prelist_kecamatan`, `prelist_sls`, `prelist_subsektor` — all with proper indexes
-- **`scripts/import_prelist.php`**: CLI streaming import via OpenSpout 4, batch INSERT with UPSERT
-  - Sheet 1 (Prelist SE2026) → `prelist_kabkota` (38 rows)
-  - Sheet 2 (Prelist SE2026 kecamatan) → `prelist_kecamatan` (667 rows)
-  - Sheets 7-44 (Prelist SE2026_35XX per-kab SLS detail) → `prelist_sls` (234,180 rows)
-  - Sheet 5 (subsektorA) → `prelist_subsektor` (191,566 rows) + UPDATE `prelist_sls.subsektor` (184,984 SLS populated)
-  - Sheets 3, 4, 6, 45, 46: skipped (desa aggregate, SBR, plkumkm, empty)
-  - Options: `--kab=3509`, `--quick`, `--subsektor`, `--batch=2000`
-  - Manual arg parsing (getopt unreliable on this PHP build)
-- **Prelist data imported**: 38 kab/kota, 667 kecamatan, 234,180 SLS, 191,566 subsektor lookup
-- **`src/Models/PrelistModel.php`**: KPI, komposisi usaha, perbandingan SE2016, beban kerja, workload stats queries
-- **Dashboard integration**: `DashboardController` injects PrelistModel data; view shows KPI card (total KK/SLS/UTP, UB/UM/UMK, PPL/PML) + stacked bar chart SE2016 vs SE2026 per kab + doughnut komposisi usaha (UB/UM/UMK); `dashboard.js` initializes both new charts
-- **500 ParseError fixed**: unclosed `<?php if (...): ?>` in inline JS block at `views/dashboard/index.php:487` — now uses proper `if/else/endif` structure
+- **Pegawai organik analysis + quick-win fixes (Jun 2026)**:
+  - **C-01 fix** — `PrelistModel::getKpiJatim()` no longer uses inflated `SUM(n_sls)`; now `COUNT(*)` from `prelist_sls` (234.180, was 250.494)
+  - **R2.7 fix** — `DashboardController::getStats()` added `WHERE kdkab='09'` to be safe for future multi-kab imports
+  - **R1.4** — `scripts/fix_prelist_n_sls.php` (dry-run default, --execute to apply) — would update all 38 kab to actual `prelist_sls` count
+  - **R1.1** — `scripts/backfill_mitra_kecamatan.php` (dry-run default) — 2.144/2.148 active mitra (99,8%) matchable from `id_sobat` to `prelist_kecamatan` via BPS regional code (4+2+kec+'0' pattern)
+  - **R2.1** — `database/patch_007_assignment_audit.sql` + `scripts/apply_patch_007.php` — adds 7 columns to `sipw_assignment` (created_by, updated_by, created_via, progress_pct, tanggal_mulai, tanggal_selesai, catatan) + 3 indexes, idempotent via `information_schema` (MySQL 8.0 compatible)
+  - **R1.5** — `scripts/analyze_assignment_history.php` — 7 historical log entries analyzed: 100% test scenarios (1 test INSERT, 6 admin manual). All assignments eventually deleted. Recommendation: do NOT replay; keep current 0-row production state.
+  - **R1.3** — `scripts/populate_kecamatan_ppl_pml.php` (dry-run default) — 666 kecamatan distribution computed from `wilkerstat` ratio, target: 2.148 ppl + 280 pml
+  - **R3.1** — `scripts/seed_pegawai_organik.php` (dry-run default) — 5 pegawai (ali, budi, citra, dani, erni) dengan 6-7 kecamatan each, password `Pegawai@2026`
+  - **R1.2** — `database/patch_008_petugas_wilayah.sql` + `scripts/apply_patch_008.php` + `scripts/populate_petugas_wilayah.php` (dry-run default) — many-to-many users↔kecamatan
+  - **R3.4** — `config/constants.php` — documented operator role status (0 users, retained in enum)
+  - **R2.5** — `src/Controllers/PegawaiActivityController.php` + `views/pegawai-activity/index.php` + `assets/js/pegawai-activity.js` — Rekap Aktivitas Pegawai page (admin/operator/pegawai), 6 KPI cards, 2 charts, per-user breakdown table. Smoke tested: rendered 14.9 KB HTML, 1 pegawai detected (pegawai3509: 20 actions/30d, 14 logins, 10 IPs).
+  - **R1.4 EXECUTED** — 38 kab updated, 16.314 overcount fixed. SUM(prelist_kabkota.n_sls) = COUNT(prelist_sls) = 234.180 ✓
+  - **R1.1 EXECUTED** — 2.144 active mitra backfilled (99.8% match rate from `id_sobat` to `prelist_kecamatan`). Coverage: 1/2158 → 2145/2158
+  - **R1.3 EXECUTED** — 31 kecamatan Jember populated with ppl/pml distribution. Sum ppl=2148, pml=280 (match target). Bug fix: removed invalid pre-loop `$db->query($sql)` with 0 params
+  - **R2.1 EXECUTED** — patch_007 applied: 7 columns + 3 indexes added to `sipw_assignment`. Bug fixes: `parse_sql` was leaking `//` delimiter into SQL; replaced `$db->exec()` (no such method) with `$pdo->exec()` for DDL
+  - **R3.1 EXECUTED** — 5 pegawai inserted (id 3121-3125): ali, budi, citra, dani, erni. Distribution: 6+6+6+6+7 = 31 kec
+  - **R2.2** — Auto-suggest assignment: `AssignmentModel::getSuggestedPetugas($nmkec)` + `getKecamatanName($kdkec)`, endpoint `?action=suggest&kdkec=`, panel UI in assignment view. Bug fix: `load` is MySQL reserved word, aliased to `ld`. Test: KENCONG → 1 pegawai (ali), BANGSALSARI → 1 pegawai (dani), NONEXISTENT → empty state ✓
+  - **R3.2** — `docs/SOP_PENUGASAN_SLS.md` (175 lines) — 5-tahap SOP: Pra-Penugasan → Penugasan → Monitoring → Koreksi → Rekap. Includes prasyarat, aturan, troubleshooting, lampiran SQL
+  - **Pegawai role access restricted** (Jun 2026): role `pegawai` sekarang HANYA bisa akses 3 halaman + Beranda: `monitoring`, `workload`, `assignment`. Dihapus dari: `wilayah`, `report`, `insight`, `pegawai-activity`. Updated: `config/constants.php` (PAGE_ACCESS), `views/partials/sidebar.php` (visibility), `src/Controllers/PegawaiActivityController.php` (requireRole).
+  - **R2.5** — `src/Controllers/PegawaiActivityController.php` + `views/pegawai-activity/index.php` + `assets/js/pegawai-activity.js` — Rekap Aktivitas Pegawai page (admin/operator/pegawai), 6 KPI cards, 2 charts, per-user breakdown table. Smoke tested: rendered 14.9 KB HTML, 1 pegawai detected (pegawai3509: 20 actions/30d, 14 logins, 10 IPs).
+- **DataTables "Invalid JSON" root cause fixed**: removed `HTTP_ACCEPT` from session fingerprint (`src/Helpers/Session.php:112`)
+- **AJAX fallback added to BaseMiddleware**: JSON 401/403 when `X-Requested-With: XMLHttpRequest`
+- **DataTable edge cases handled**: try-catch wrapper, `$start >= 0` clamp, `length=-1` → 10,000
+- **Petugas page restricted to admin-only**: config, controller guard, sidebar hidden
+- **Prelist SQL tables created + data imported**: `prelist_kabkota` (38), `prelist_kecamatan` (667), `prelist_sls` (234,180), `prelist_subsektor` (191,566)
+- **SubsektorA imported**: 191,566 rows; `prelist_sls.subsektor` populated for 171,079 SLS
+- **SBR (Sheet 4) data imported**: `prelist_kecamatan.sbr` populated for all 666 kecamatan
+- **PrelistModel created**: KPI, komposisi, perbandingan, anomali, beban, map queries
+- **Dashboard KPI + charts integrated**: Prelist cards, stacked bar, doughnut, anomaly widget, Leaflet map
+- **500 ParseError fixed**: unclosed `<?php if (...): ?>` in inline JS
+- **Security audit fixes (se2026-jember)** — R-001 s.d R-007: removed `password_fasih_plain`, `.htaccess` deny in `database/`, CSRF in `surat_keluar.php`, null-safe PDO, generic error messages
+- **Assignment dropdown**: shows `nama_lengkap` (fallback to `username`), Select2 searchable on PCL/PML/TF modals
+- **PCL/PML/TF CRUD page** (`petugas-lapangan`): dedicated controller, filter role, KPI card, import Excel + preview + audit
+- **Download SLS XLSX**: filter by kecamatan, includes Usaha column
+- **SE2026 orange theme applied across all pages**: `bg-se2026`, `text-se2026`, `btn-se2026`, `badge-se2026`, `border-se2026`, `bg-se2026-gradient` CSS; navbar → orange gradient; sidebar active → orange; chart colors → `#F47B20`
+- **Monitoring page — 3 new widget categories**: kecamatan summary cards, desa rincian (filter by kecamatan), SLS/Non-SLS tabs (paginated DataTables with search); auto-refresh polling 30s; MonitoringModel + MonitoringController (4 JSON endpoints); monitoring.js (fetch + render + debounce + pagination + refresh)
+- **Dashboard readability improvements**: wilayah labels (Jember blue `#1A73E8`, Jatim orange `#F47B20`, Kab Lain grey `#6C757D`), section labels, consistent border accent colors, legend footer
+- **Report page enhanced**: ReportModel — `rekapTaskForce()`, `prelistSummary()`, `prelistPerKec()`; ReportController — `task_force` & `prelist` types + preview JSON endpoint; Excel/CSV/PDF/Print export for all new types; redesigned view with summary stats bar, 7 export card types, detail wilayah filter-by-kecamatan with live preview
+- **Insight & Analisa page** (`?page=dashboard&sub=insight`): InsightModel (7 method: getExecutiveSummary, getAnomaliPerKecamatan, getBebanKerjaPerKecamatan, getDistribusiMuatan, getCoverageGap, getRekomendasi, getTopSlsAnomali, getUserPool, getDataQuality); InsightController (3 action: index, anomali-detail AJAX, export CSV); view (6 section: Rekomendasi Otomatis, KPI cards, Anomali chart, Distribusi doughnut, Beban Kerja, Coverage Gap, Tabel Beban, User Pool, Top SLS Anomali, Data Quality); insight.js (5 Chart.js widget + AJAX reload + search debounce + table filter)
+- **Patch_006 — Collation harmonization**: `prelist_*` tables migrated from `utf8mb4_0900_ai_ci` ke `utf8mb4_unicode_ci` (matches `sipw_*`); fix `Illegal mix of collations` error yang sebelumnya menggagalkan cross-table JOIN; backup di `storage/backup/pre_patch006_*.sql`; script `scripts/apply_patch_006.php`
+- **All syntax checks pass** — every modified file validated with `php -l`
+- **Dashboard verified**: login page (200 OK), auth redirect (302 → login), dashboard renders with all sections
+- **Step 1 — Dual namespace removed**: ported `app/Helpers/Database.php` (250 lines) → `src/Core/Database.php` (276 lines, enhanced with `tableExists`, `getTableColumns`, `isConnected`, `getQueryCount`, `getQueryLog`, `logError`, `lastInsertId`, `quote`, etc.); created `src/Config/DatabaseConfig.php` (53 lines, replaces `app/Config/Database.php`); created `src/Helpers/Env.php` (richer .env loader with boolean/numeric auto-cast)
+- **Step 1.5 — Entry points migrated**: `public/index.php`, `public/health.php`, `test-shared-connection.php`, `import-rekap-sls.php`, `import-sipw-data.php`, `tests/DatabaseTest.php` all updated to use `src/` classes
+- **Step 1.6 — `app/` directory removed entirely**: `composer.json` PSR-4 simplified to `"App\\": "src/"`; `app/Controllers/`, `app/Models/`, `app/Helpers/`, `app/Config/`, `app/Views/` all deleted; `app/bootstrap.php` migrated to `src/bootstrap.php`
+- **TestConnectionController ported** to `src/Controllers/TestConnectionController.php` (extends `App\Core\Controller`, uses `App\Core\Database` + `App\Config\DatabaseConfig`); view at `views/health/test-connection.php` (self-contained HTML, no sidebar layout)
+- **Step 2 + 3 (skipped)**: verified `users.username` already has UNIQUE constraint, `sipw_assignment` already has 4 FKs (pencacah/pengawas/sipw/taskforce → users/sipw_import), `prelist_sls.idx_kec(kd_kab, kd_kec)` composite already exists, all 60+ FKs across 40+ tables are in place
+- **Step 4 — `dash_rollback_points` cleaned**: 23 unused rows (117.95 MB) moved to `dash_rollback_points_archive`; main table now 0 rows, ~0 actual disk (112 MB was reserved extents). Cleanup script at `scripts/cleanup_rollback_points.php` (dry-run default, --execute to apply, --keep-unused to preserve recent)
+- **Step 8 — GitHub Actions CI**: `.github/workflows/ci.yml` with 3 jobs (PHP syntax check, PHPUnit with MySQL service, composer security audit)
+- **Step 9 — Global CSP header**: `App::boot()` sends `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`; also sent from `src/bootstrap.php` for public entry points; configurable via `CSP_ENABLED` + `CSP_DIRECTIVES` env vars
+- **Step 11 — `.env.example` complete**: 25 lines covering DB (DB_DATABASE primary, DB_NAME fallback), APP, SESSION, CSP, CORS
+- **Kecamatan scope feature (Jun 2026)** — 1:1 scope per pegawai:
+  - **Schema** — `database/patch_009_pegawai_kecamatan.sql` adds `users.kecamatan_tugas VARCHAR(7)` + index `idx_users_kec_tugas(kecamatan_tugas, role)`. 5 pegawai default assignment: ali→KENCONG (3509010), budi→SILO (3509070), citra→TANGGUL (3509180), dani→BANGSALSARI (3509190), erni→KALIWATES (3509710)
+  - **Session injection** — `AuthController::doLogin()` SELECT tambah `kecamatan_tugas`, stored in `$_SESSION['user']['kecamatan_tugas']`
+  - **Controller helper** — `Controller::getKecamatanScope(): ?string` returns 7-digit scope if role=pegawai AND session valid; regex `^([0-9]{3}|[0-9]{7})$`. `applyKecamatanScope($filters)` overrides `kdkec` filter to 3-digit (auto-convert from 7-digit via `substr(..., -3)`)
+  - **Server-side enforcement** — `AssignmentController`, `MonitoringController` (6 methods: showPage, kecamatanSummary, desaSummary, slsData, nonSlsData, filterDropdowns), `WorkloadController` (index + detail) all call `applyKecamatanScope` — `?kdkec=999` bypass attempt IGNORED for role pegawai
+  - **Frontend** — `views/partials/navbar.php` shows `Kec: <name>` badge (SE2026 orange); 3 view filters (assignment, monitoring, workload) hide `kdkec` dropdown for pegawai, replaced with readonly text + hidden input
+  - **Bug fixes** — (a) `applyKecamatanScope` converts 7→3 digit (models filter `si.kdkec` 3-digit, `ps.kd_kec` 3-digit, `prelist_kecamatan.kd_kec` 7-digit — schema mismatch discovered via smoke test); (b) `$db->query()` returns `PDOStatement`, must call `->fetchAll()` before iterating multiple times
+  - **Smoke test** — `scripts/smoke_kecamatan_scope.php` (95 lines, 7 sections): schema check, prelist_kecamatan/sls/sipw_import cross-ref, regex validation (9 cases incl. 7-digit, 3-digit, 6-digit reject, SQL/XSS/path-traversal/tautology attacks), admin no-scope, per-kec row count, total cross-verify
+  - **HTTP smoke** — All 5 pegawai login → page shows scope kecamatan name → AJAX `kecamatan-summary` returns exactly 1 row (NOT the bypass value). Admin login → sees all 31 kecamatan + 62 `<option>` in dropdowns. Other roles (PCL/PML/TF/mitra) → passthrough (no restriction)
+  - **Schema discovery** — `prelist_kecamatan.kd_kec` = 7-digit (e.g., '3509010') vs `prelist_sls.kd_kec`/`sipw_import.kdkec` = 3-digit (e.g., '010'); scope stored 7-digit, filter applied 3-digit
+- **Tahap 2 — Admin UI to set kecamatan_tugas**: `UserModel::getKecamatanList($kd_kab)` + `getKecamatanName($kd_kec)` (resolve 3/7-digit); `create()` + `update()` support `kecamatan_tugas` column; `PetugasController::validateKecamatanTugas($role, $raw)` with regex `^([0-9]{3}|[0-9]{7})$` + existence check; `views/petugas/list.php` new "Kec. Tugas" column (badge SE2026 orange) + kecamatan dropdown in Create/Edit modals (visible only when role=pegawai via `toggleKecamatan()` JS)
 
 ### In Progress
 - *(none)*
@@ -35,39 +90,110 @@ Integrate official prelist SE2026 data into dashboard and fix all post-integrati
 - *(none)*
 
 ## Key Decisions
-- Session fingerprint excludes `HTTP_ACCEPT` — prevents false mismatch between page-load and XHR/fetch requests while preserving User-Agent + IP security
-- Prelist import via CLI script, not web controller — 30 MB XLSX would exceed PHP timeout/memory limits in web context
-- `prelist_kabkota`/`prelist_kecamatan`/`prelist_sls` use separate schema — no conflict with existing `sipw_import`, `master_sls`, `alokasi_petugas` tables
-- Per-kab SLS Detail sheets (7-44) used for `prelist_sls` — these have actual 14-digit `idsls`; Sheet 3 desa aggregates skipped
+- Session fingerprint excludes `HTTP_ACCEPT` — prevents false mismatch between page-load and XHR/fetch
+- Prelist import via CLI script, not web controller — 30 MB XLSX exceeds PHP timeout/memory limits
+- `prelist_kabkota`/`prelist_kecamatan`/`prelist_sls` use separate schema — no conflict with existing tables
+- Per-kab SLS Detail sheets (7-44) used for `prelist_sls` — these have actual 14-digit `idsls`
 - Manual CLI arg parsing used instead of `getopt()` (getopt unreliable on this PHP/Windows build)
-- `subsektor` column left as 0 in prelist_sls (not imported from subsektorA sheet) — can be updated later
-
-## Next Steps
-1. Verify dashboard displays prelist KPI + charts at http://localhost/dashboard-se2026/ (login required)
-2. Verify Jember (3509) prelist data specifically
-3. Optionally import subsektorA data into a separate table or prelist_sls subsektor column
-4. Optionally import Sheet 4 (SBR) data into prelist_kecamatan or separate table
+- PCL/PML/TF dropdown di Assignment hanya user dengan role persis `pcl`/`pml`/`task_force`
+- `ReaderOptions::setTempFolder()` wajib untuk semua OpenSpout Reader/Writer di Windows (`C:\Windows\Temp` not writable)
+- Monitoring widget menggunakan fetch API (bukan DataTables tambahan) untuk menghindari konflik
+- Perbedaan warna wilayah: **Biru `#1A73E8` = Jember**, **Oranye `#F47B20` = Jawa Timur**, **Abu `#6C757D` = Kab. Lain**
+- Cache helper sudah ada (`src/Helpers/Cache.php`) — DashboardController sudah menggunakan `Cache::remember()` untuk stats/wilayah/beban dengan TTL 60-300s
+- **Dual namespace fix**: porting rich API ke `src/`, bukan duplikasi — `src/Core/Database.php` jadi satu-satunya PDO singleton
+- **CSP default allows 'unsafe-inline' + 'unsafe-eval'** untuk kompatibilitas dengan Bootstrap 5.3, DataTables 1.13, Chart.js 4.4, Leaflet 1.9, Select2 4.1 — nonce-based CSP butuh refactor besar
+- **dash_rollback_points cleanup default = archive ALL is_used=0** (karena rollback tidak pernah dipakai di produksi selama 1 bulan+); `--keep-unused` flag untuk preserve is_used=0 yang masih baru
+- **Env class fallback** DB_NAME/DB_USER/DB_PASS → DB_DATABASE/DB_USERNAME/DB_PASSWORD (backward compat dengan .env lama)
+- **Patch_007 idempotent via information_schema + DELIMITER/CREATE PROCEDURE** — MySQL 8.0 tidak support `ADD COLUMN IF NOT EXISTS`, jadi pakai stored procedure dengan cek `information_schema.columns` dulu
+- **id_sobat regional code mapping** (untuk backfill kecamatan): `kd_kab=SUBSTRING(id_sobat,1,4)`, `kd_kec=CONCAT(kd_kab, SUBSTRING(id_sobat,5,2), '0')` — last char selalu '0' karena BPS encoding
+- **MySQL 8.0+** required untuk patch_007 (information_schema + DELIMITER + stored procedure). Test: 8.0.30 OK.
+- **PegawaiActivityController query**: JOIN users u ON u.id = al.user_id — `created_at` di SELECT harus di-alias (`al.created_at`) untuk menghindari ambiguity
+- **Kecamatan scope schema**: tambah kolom BARU `kecamatan_tugas` (1:1, single kd_kec), JANGAN ubah `kecamatan_bertugas` (1:N, CSV coverage) — beda semantik
+- **Kecamatan scope format**: session pakai 7-digit `kd_kec` (e.g., `3509180`); controller extract 3-digit `substr($scope, -3)` untuk `prelist_sls.kd_kec` (CHAR(3), e.g., `180`)
+- **Server-side enforcement**: `applyKecamatanScope` ALWAYS override `$_GET['kdkec']` untuk role pegawai, regardless of client value
+- **Regex validation**: `kecamatan_tugas` divalidasi `^([0-9]{3}|[0-9]{7})$` untuk prevent injection
+- **Pegawai role access**: HANYA 4 halaman (Beranda + monitoring + workload + assignment) — wilayah/report/insight/pegawai-activity dipindah ke admin/operator/TF
+- **Default 5 pegawai assignment**: 1 kecamatan per pegawai (dipilih dari coverage area)
 
 ## Critical Context
-- `PRELIST SE2026.xlsx` (29.8 MB) at `C:\laragon\www\dashboard-se2026\data\PRELIST SE2026.xlsx`
-- OpenSpout sheet iterator uses 1-based indexing (Sheet 1 = first sheet)
-- Sheet 5 (subsektorA) contains per-SLS subsektor codes with formula XLOOKUP in per-kab sheets
-- Per-kab SLS sheets (7-44) have formulas for iddesa/kab/kec/desa columns → computed in PHP from idsls
-- 234,180 SLS imported (vs 250,494 SLS in kabkota aggregate — discrepancy likely due to different aggregation source)
-- `prelist_kecamatan` has 667 rows (expected ~666 — possibly includes a totals row in source)
-- Prelist data is not cached in PrelistModel — dashboard reloads from DB on every page load
+- `password_fasih_plain` column removed — existing data ignored; view no longer exposes it
+- `app/` directory **REMOVED** — semua file PHP di `src/`, views di `views/`, layouts di `views/layouts/`
+- `sipw_assignment` has **0 rows** — monitoring widgets show empty states
+- `prelist_sls` has 234,180 rows (16,538 for Jember/3509); `sipw_import` has 16,772 SLS from 31 kecamatan
+- Users: 3,104 total; Active admins: 5 (id 1-3, 13, 14-inactive). 5 pegawai: 4 created by R3.1 (ali/budi/citra/dani/erni) + 1 existing `pegawai3509`
+- OpenSpout temp folder must be set to `storage/import` — not `sys_get_temp_dir()`
+- `DashboardController` passes `$kec_summary`, `$prelist_kec`, `$total_prelist` to monitoring view
+- `AuthController::doLogin()` calls `Session::setFingerprint()` + `Session::regenerate()` — new session ID after login
+- **`dash_rollback_points` 23 rows archived** ke `dash_rollback_points_archive` (116 MB); main table 0 rows
+- **CSP header aktif** di semua entry points (front controller + public/index.php + test-connection)
+- **Composer autoload**: 1955 classes (sebelum app/ removal: 1962)
+- **Class ambiguity resolution**: composer prefers `src/` over `app/` (per config order) — sekarang tidak ada duplikat karena `app/` dihapus
+- **MySQL `dash_rollback_points.ibd`** masih 112 MB di information_schema (reserved extents InnoDB) meskipun actual rows=0 — file system tidak reclaim sampai ALTER TABLE FORCE
+- **Kecamatan scope (pegawai role)**: 1:1 assignment per user via `users.kecamatan_tugas` (7-digit, e.g. '3509010'). Server-side enforced di 3 halaman (assignment, monitoring, workload). Client `?kdkec=` di-override pakai session scope. Schema column: `users.kecamatan_tugas VARCHAR(7)` (NULL OK) + `idx_users_kec_tugas(kecamatan_tugas, role)`. Validation regex: `^([0-9]{3}|[0-9]{7})$`
+- **Schema format mismatch** untuk kd_kec: `prelist_kecamatan.kd_kec` = 7-digit (`kd_kab+3digit`), `prelist_sls.kd_kec` = 3-digit, `sipw_import.kdkec` = 3-digit, `users.kecamatan_tugas` = 7-digit. Convert 7→3 via `substr($scope, -3)`
 
 ## Relevant Files
-- `scripts/import_prelist.php`: CLI streaming import, handles Sheet 1 (kabkota), Sheet 2 (kecamatan), Sheets 7-44 (per-kab SLS)
-- `src/Models/PrelistModel.php`: KPI, komposisi usaha, perbandingan SE2016, beban kerja, workload stats
-- `src/Controllers/DashboardController.php`: injects PrelistModel data into view
-- `views/dashboard/index.php`: prelist KPI card + SE2016 vs SE2026 stacked bar + UB/UM/UMK doughnut
-- `assets/js/dashboard.js`: chartPrelistPerbandingan (stacked bar), chartPrelistKomposisi (doughnut)
+- `src/Core/Database.php`: enhanced PDO singleton (276 lines) — `tableExists`, `getTableColumns`, `isConnected`, `getQueryCount`, `logError`, `lastInsertId`, transactions
+- `src/Config/DatabaseConfig.php`: PDO config loader (53 lines) — `load()`, `get()`, `all()`, `dsn()`
+- `src/Helpers/Env.php`: rich .env loader — auto-cast boolean/numeric, `required()`, `get()`
+- `src/bootstrap.php`: migrated from `app/bootstrap.php` (78 lines) — loads .env, DB config, sends CSP
+- `src/Controllers/TestConnectionController.php`: extended `App\Core\Controller` (port from app/) — uses `App\Core\Database` + `App\Config\DatabaseConfig`
+- `src/Controllers/ReportController.php`: task_force/prelist types + preview JSON
+- `src/Models/ReportModel.php`: rekapTaskForce(), prelistSummary(), prelistPerKec()
+- `src/Controllers/PclPmlTfController.php`: CRUD + import Excel + template + download
+- `src/Controllers/AssignmentController.php`: handlerDownload + template + role filter
+- `src/Controllers/AuthController.php`: doLogin with fingerprint + regenerate
+- `src/Controllers/MonitoringController.php`: 4 JSON endpoints
 - `src/Helpers/Session.php`: fingerprint excludes HTTP_ACCEPT
-- `src/Middleware/BaseMiddleware.php`: redirectToLogin/forbidden/unauthorized return JSON for AJAX
-- `config/constants.php`: petugas restricted to `[ROLE_ADMIN]`
-- `src/Controllers/PetugasController.php`: requireRole admin guard + nama_lengkap in query
-- `src/Core/Controller.php`: requireRole redirects with flash error
-- `views/partials/sidebar.php`: petugas link hidden for non-admin
-- `views/petugas/list.php`: ID + Nama Lengkap columns
-- `data/PRELIST SE2026.xlsx`: prelist Excel source file (29.8 MB, 46 sheets)
+- `src/Helpers/Cache.php`: file-based cache with TTL
+- `src/Helpers/Backup.php`: createRollbackPoint (TODO: streaming refactor)
+- `src/Helpers/AuditLog.php`: silent failure on log error
+- `src/Core/App.php`: now sends CSP + security headers in `boot()`
+- `src/Middleware/BaseMiddleware.php`: redirectToLogin/forbidden/unauthorized JSON for AJAX
+- `src/Middleware/CsrfMiddleware.php`: validates `X-CSRF-Token`/`X-XSRF-Token` headers
+- `src/Helpers/Security.php`: csrfToken/validateCsrf/hashPassword (bcrypt cost 12)
+- `src/Services/ImportProcessor.php`: 550 lines, BATCH_SIZE=500
+- `src/Services/AssignmentImporter.php`: 237 lines
+- `src/Models/MonitoringModel.php`: 583 lines, 7 query methods
+- `src/Models/PrelistModel.php`: KPI, komposisi, perbandingan, anomali, beban, map
+- `views/health/test-connection.php`: self-contained diagnostic (no sidebar layout)
+- `views/dashboard/index.php`: redesigned — wilayah labels, badges, legend (661 lines)
+- `views/monitoring/index.php`: 3 widget sections (262 lines)
+- `views/report/index.php`: redesigned — summary stats, 7 export cards, detail preview
+- `views/partials/sidebar.php`: PCL/PML/TF menu link
+- `views/partials/stat_card.php`: reusable card partial
+- `assets/js/monitoring.js`: fetch widgets + debounce + pagination + auto-refresh
+- `assets/css/app.css`: SE2026 theme + wilayah badge/border classes
+- `config/config.php`: VIEW_PATH, STORAGE_PATH, ALLOWED_EXTENSIONS, SE2026_START_DATE
+- `config/constants.php`: ROLE_*, DASHBOARD_ROLES, ASSIGNMENT_ROLES, ROLE_HOME, PAGE_ACCESS
+- `composer.json`: PSR-4 simplified to `"App\\": "src/"`
+- `phpunit.xml`: PHPUnit 11 config
+- `.htaccess`: lines 9-10 deny app/src/config/storage/views/vendor access; lines 20-25 security headers; line 7 test-connection route
+- `index.php`: front controller with `?page=&sub=` routing
+- `public/index.php`: test-connection page entry (uses `src/bootstrap.php`)
+- `public/health.php`: JSON/Prometheus health check
+- `test-shared-connection.php`: CLI validator at root (uses `src/Core\Database`)
+- `import-rekap-sls.php`, `import-sipw-data.php`: CLI importers (use `src/Core\Database`)
+- `.env.example`: 25 lines (DB, APP, SESSION, CSP, CORS)
+- `.github/workflows/ci.yml`: 3 jobs (syntax, PHPUnit+MySQL, audit)
+- `scripts/cleanup_rollback_points.php`: 23 unused rows → archive (saves 116 MB)
+- `scripts/test_connection_cli.php`: smoke test for TestConnectionController
+- `scripts/import_prelist.php`: CLI streaming import (29.8 MB, 46 sheets)
+- `scripts/import_official_data.php`: alternative importer
+- `scripts/rollback-import.php`: rollback via dash_rollback_points
+- `scripts/smoke_kecamatan_scope.php`: 95 lines, 7 sections — schema, regex, security attacks, admin, per-kec
+- `data/PRELIST SE2026.xlsx`: prelist Excel source (29.8 MB, 46 sheets)
+- `database/patch_001_dashboard_base.sql` to `patch_009_pegawai_kecamatan.sql`: 9 idempotent patches (patch_009 adds `users.kecamatan_tugas` + index)
+- `database/patch_007_assignment_audit.sql`: 7 columns + 3 indexes for sipw_assignment (APPLIED via DELIMITER/proc)
+- `docs/ANALISIS_APLIKASI.md`: 471 lines, dated 28 May 2026
+- `docs/SOP_PENUGASAN_SLS.md`: 175 lines, 5-tahap SOP
+- `src/Core/Controller.php`: `getKecamatanScope(): ?string` (regex `^([0-9]{3}|[0-9]{7})$`), `applyKecamatanScope($filters)` (auto 7→3 digit convert)
+- `src/Controllers/AssignmentController.php`: `applyKecamatanScope` di index(), `handleBulk()`, `handleDownload()`; `getSuggestedPetugas($nmkec)` + `getKecamatanName($kdkec)`; `?action=suggest&kdkec=` endpoint
+- `src/Controllers/MonitoringController.php`: `applyKecamatanScope` di 6 method (showPage, kecamatanSummary, desaSummary, slsData, nonSlsData, filterDropdowns)
+- `src/Controllers/WorkloadController.php`: `applyKecamatanScope` di index() + detail() (substr(-3) untuk `si.kdkec`)
+- `src/Models/AssignmentModel.php`: `getSuggestedPetugas` REGEXP `(^|, )NMKEC(,|$)`, `getKecamatanName`, alias `ld` (was `load` reserved)
+- `src/Models/MonitoringModel.php`: `getPrelistSls` + `countPrelistSls` + param `$kdkec` (3-digit)
+- `src/Models/UserModel.php`: `kecamatan_tugas` di `create()`+`update()`; `getKecamatanList($kd_kab)` + `getKecamatanName($kd_kec)` (resolve 3/7-digit)
+- `src/Controllers/PetugasController.php`: `validateKecamatanTugas($role, $raw)` + `kecamatan_tugas` di handleCreate/handleEdit + audit log
+- `views/partials/navbar.php`: badge `Kec: <name>` untuk role pegawai (SE2026 orange)
+- `views/petugas/list.php`: kolom "Kec. Tugas" (badge) + dropdown kecamatan di Create/Edit modals (visible only when role=pegawai)

@@ -105,6 +105,47 @@ abstract class Controller
         return $this->request->only(array_keys($rules));
     }
 
+    /**
+     * Kecamatan scope untuk filter data (hanya role pegawai yang di-scope).
+     *
+     * Return:
+     *   - string (7-digit kd_kec) → user ter-scope ke 1 kecamatan
+     *   - null → user tidak di-scope (admin/operator/PML/PCL/TF lihat semua)
+     *
+     * Dipakai di AssignmentController, MonitoringController, WorkloadController
+     * untuk override $_GET['kdkec'] agar tidak bisa dimanipulasi dari client.
+     */
+    protected function getKecamatanScope(): ?string
+    {
+        $user = Session::get('user');
+        if (!$user || ($user['role'] ?? '') !== ROLE_PEGAWAI) {
+            return null;
+        }
+        $scope = $user['kecamatan_tugas'] ?? null;
+        if (!$scope) {
+            return null;
+        }
+        // Format valid: 7-digit (kd_kab+3-digit kd_kec) ATAU 3-digit (kecamatan only)
+        return preg_match('/^([0-9]{3}|[0-9]{7})$/', $scope) ? $scope : null;
+    }
+
+    /**
+     * Terapkan scope ke filter array.
+     * Untuk role non-pegawai: scope=null, filter tidak diubah.
+     * Untuk role pegawai: $_GET['kdkec'] di-override dengan session scope (3-digit).
+     *
+     * Konversi: scope disimpan 7-digit di session (mis. '3509010') → filter
+     * `kdkec` model pakai 3-digit `si.kdkec` (mis. '010') → substr(-3).
+     */
+    protected function applyKecamatanScope(array $filters): array
+    {
+        $scope = $this->getKecamatanScope();
+        if ($scope !== null) {
+            $filters['kdkec'] = strlen($scope) === 7 ? substr($scope, -3) : $scope;
+        }
+        return $filters;
+    }
+
     protected function requireAuth(): void
     {
         if (!Session::has('user')) {

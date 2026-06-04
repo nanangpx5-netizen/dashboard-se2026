@@ -31,9 +31,7 @@
                 </thead>
                 <tbody>
                     <?php foreach ($wilayah as $row): ?>
-                        <?php
-                        $progress = $row['total_sls'] > 0 ? round(($row['completed_sls'] / $row['total_sls']) * 100, 1) : 0;
-                        ?>
+                        <?php $progress = $row['completed'] ?? 0; ?>
                         <tr>
                             <td class="text-center text-muted"></td>
                             <td class="fw-semibold"><?= htmlspecialchars($row['nama_kecamatan']) ?>
@@ -91,7 +89,7 @@
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+                    <button type="submit" class="btn btn-sm btn-se2026">Simpan</button>
                 </div>
             </div>
         </form>

@@ -12,8 +12,8 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 $root = __DIR__;
-require $root . '/app/bootstrap.php';
-use App\Helpers\Database;
+require $root . '/src/bootstrap.php';
+use App\Core\Database;
 
 // ─── Konfig ──────────────────────────────────────────────────────
 $batchSize   = 500;

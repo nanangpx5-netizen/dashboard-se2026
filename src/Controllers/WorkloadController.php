@@ -20,6 +20,12 @@ class WorkloadController extends Controller
         $role   = $_GET['role'] ?? null;
         $kdkec  = $_GET['kdkec'] ?? null;
 
+        // Server-side scope: override kdkec untuk role pegawai
+        $scope = $this->getKecamatanScope();
+        if ($scope !== null) {
+            $kdkec = substr($scope, -3); // 7-digit scope → 3-digit sipw.kdkec
+        }
+
         $ranking      = $this->model->getRanking($role, $kdkec);
         $kecamatan    = $this->model->getKecamatan();
         $roles        = $this->model->getAvailableRoles();
@@ -31,6 +37,7 @@ class WorkloadController extends Controller
             $chartMuatan[] = (int) $r['total_muatan'];
         }
 
+        $this->data['kecamatan_scope'] = $scope;
         $this->render('workload/index', [
             'title'       => 'Beban Kerja Petugas',
             'ranking'     => $ranking,
@@ -54,6 +61,10 @@ class WorkloadController extends Controller
         }
 
         $kdkec    = $_GET['kdkec'] ?? null;
+        $scope = $this->getKecamatanScope();
+        if ($scope !== null) {
+            $kdkec = substr($scope, -3);
+        }
         $detail   = $this->model->getDetail($id, $role, $kdkec);
 
         $summary = [

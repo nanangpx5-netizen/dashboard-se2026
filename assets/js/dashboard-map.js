@@ -10,7 +10,7 @@ $(document).ready(function () {
 
     var bounds = [];
     var maxMuatan = Math.max.apply(null, mapKecamatan.map(function (d) { return d.muatan_rs; })) || 1;
-    var colors = ['#198754', '#0d6efd', '#ffc107', '#dc3545'];
+    var colors = ['#198754', '#F47B20', '#ffc107', '#dc3545'];
 
     mapKecamatan.forEach(function (kec) {
         getCoords(kec.nm_kec, function (lat, lng) {

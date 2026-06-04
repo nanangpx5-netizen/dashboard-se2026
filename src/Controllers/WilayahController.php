@@ -36,6 +36,13 @@ class WilayahController extends Controller
             ORDER BY wk.nama_kecamatan
         ")->fetchAll();
 
+        foreach ($data as &$r) {
+            $r['completed'] = $r['total_sls'] > 0
+                ? round(($r['completed_sls'] / $r['total_sls']) * 100, 1)
+                : 0;
+        }
+        unset($r);
+
         $this->data['page_title'] = 'Data Wilayah';
         $this->render('wilayah/list', [
             'wilayah' => $data,

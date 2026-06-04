@@ -155,3 +155,127 @@
     font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
     letter-spacing: 0.3px;
 }
+
+/* ─── SE2026 Brand Colors ────────────────────────────────────────── */
+:root {
+    --se2026-orange: #F47B20;
+    --se2026-orange-dark: #D46200;
+    --se2026-orange-light: #FFF0E0;
+    --se2026-orange-gradient: linear-gradient(135deg, #F47B20 0%, #FF9A3C 100%);
+}
+
+.bg-se2026 {
+    background-color: var(--se2026-orange) !important;
+}
+.bg-se2026-gradient {
+    background: var(--se2026-orange-gradient) !important;
+}
+.text-se2026 {
+    color: var(--se2026-orange) !important;
+}
+.btn-se2026 {
+    --bs-btn-color: #fff !important;
+    --bs-btn-bg: var(--se2026-orange) !important;
+    --bs-btn-border-color: var(--se2026-orange) !important;
+    --bs-btn-hover-color: #fff !important;
+    --bs-btn-hover-bg: var(--se2026-orange-dark) !important;
+    --bs-btn-hover-border-color: var(--se2026-orange-dark) !important;
+    --bs-btn-active-color: #fff !important;
+    --bs-btn-active-bg: var(--se2026-orange-dark) !important;
+    --bs-btn-active-border-color: var(--se2026-orange-dark) !important;
+    --bs-btn-disabled-color: #fff !important;
+    --bs-btn-disabled-bg: #e89a5c !important;
+    --bs-btn-disabled-border-color: #e89a5c !important;
+}
+.border-se2026 {
+    border-color: var(--se2026-orange) !important;
+}
+.badge-se2026 {
+    background-color: var(--se2026-orange) !important;
+    color: #fff !important;
+}
+a.text-se2026:hover,
+a.text-se2026:focus {
+    color: var(--se2026-orange-dark) !important;
+}
+.nav-link.active.bg-se2026 {
+    background-color: var(--se2026-orange) !important;
+}
+
+/* ─── SE2026 Orange navbar tweaks ────────────────────────────────── */
+.navbar.bg-se2026-gradient .navbar-brand,
+.navbar.bg-se2026-gradient .nav-link {
+    color: #fff !important;
+}
+.navbar.bg-se2026-gradient .dropdown-menu {
+    --bs-dropdown-link-active-bg: var(--se2026-orange);
+}
+
+/* ─── SE2026 Login page tweaks ───────────────────────────────────── */
+.bg-se2026-light {
+    background-color: var(--se2026-orange-light) !important;
+}
+
+/* ─── Wilayah Badge Colors ───────────────────────────────────────── */
+:root {
+    --jember-blue: #1A73E8;
+    --jember-blue-dark: #1557B0;
+    --jember-blue-light: #E8F0FE;
+    --jatim-orange: #F47B20;
+    --lain-gray: #6C757D;
+}
+
+.badge-jember {
+    background-color: var(--jember-blue) !important;
+    color: #fff !important;
+}
+.badge-jatim {
+    background-color: var(--jatim-orange) !important;
+    color: #fff !important;
+}
+.badge-lain {
+    background-color: var(--lain-gray) !important;
+    color: #fff !important;
+}
+.text-jember {
+    color: var(--jember-blue) !important;
+}
+.border-jember {
+    border-color: var(--jember-blue) !important;
+}
+.border-jatim {
+    border-color: var(--jatim-orange) !important;
+}
+.bg-jember-light {
+    background-color: var(--jember-blue-light) !important;
+}
+.section-label-jember {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--jember-blue-light);
+    border-left: 4px solid var(--jember-blue);
+    border-radius: 0 6px 6px 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--jember-blue-dark);
+}
+.section-label-jatim {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--se2026-orange-light);
+    border-left: 4px solid var(--jatim-orange);
+    border-radius: 0 6px 6px 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--se2026-orange-dark);
+}
+.card-jember {
+    border-left: 4px solid var(--jember-blue) !important;
+}
+.card-jatim {
+    border-left: 4px solid var(--jatim-orange) !important;
+}

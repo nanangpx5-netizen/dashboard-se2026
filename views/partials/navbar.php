@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand navbar-dark bg-primary px-3 shadow-sm">
+<nav class="navbar navbar-expand navbar-dark bg-se2026-gradient px-3 shadow-sm">
     <div class="container-fluid">
         <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Buka menu">
             <i class="fas fa-bars text-white"></i>
@@ -8,6 +8,23 @@
         </span>
         <ul class="navbar-nav ms-auto align-items-center">
             <?php if (!empty($current_user)): ?>
+                <?php
+                $scope = $current_user['kecamatan_tugas'] ?? null;
+                $scopeKec = null;
+                if ($scope) {
+                    try {
+                        $db = \App\Core\Database::getInstance();
+                        $scopeKec = $db->fetchColumn("SELECT nm_kec FROM prelist_kecamatan WHERE kd_kec = ?", [$scope]);
+                    } catch (Throwable $e) { $scopeKec = null; }
+                }
+                ?>
+                <?php if ($scopeKec): ?>
+                <li class="nav-item me-2">
+                    <span class="badge bg-white text-se2026 px-3 py-2" title="Kecamatan tugas (server-side filter)">
+                        <i class="fas fa-map-marker-alt me-1"></i>Kec: <?= htmlspecialchars($scopeKec) ?>
+                    </span>
+                </li>
+                <?php endif; ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-user-circle fs-5"></i>
@@ -15,6 +32,9 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($current_user['role'] ?? '') ?></span></li>
+                        <?php if ($scopeKec): ?>
+                        <li><span class="dropdown-item-text small text-muted"><i class="fas fa-map-marker-alt me-1"></i>Kec: <?= htmlspecialchars($scopeKec) ?></span></li>
+                        <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="?page=logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>

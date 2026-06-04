@@ -57,7 +57,7 @@ class AuthController extends Controller
             }
 
             $stmt = $pdo->prepare("
-                SELECT id, username, password, role, status_akun
+                SELECT id, username, password, role, status_akun, kecamatan_tugas
                 FROM users
                 WHERE username = ?
                 LIMIT 1
@@ -119,7 +119,7 @@ class AuthController extends Controller
             }
 
             $stmt = $pdo->prepare("
-                SELECT id, username, password, role, status_akun
+                SELECT id, username, password, role, status_akun, kecamatan_tugas
                 FROM users WHERE username = ? LIMIT 1
             ");
             $stmt->execute([$username]);
@@ -147,12 +147,15 @@ class AuthController extends Controller
 
     private function doLogin(\PDO $pdo, array $user, bool $isAjax = false): never
     {
+        $kecamatanTugas = $user['kecamatan_tugas'] ?? null;
+
         Session::set('user', [
-            'id'        => (int) $user['id'],
-            'username'  => $user['username'],
-            'role'      => $user['role'],
-            'role_label'=> ROLE_LABELS[$user['role']] ?? $user['role'],
-            'login_at'  => date('Y-m-d H:i:s'),
+            'id'              => (int) $user['id'],
+            'username'        => $user['username'],
+            'role'            => $user['role'],
+            'role_label'      => ROLE_LABELS[$user['role']] ?? $user['role'],
+            'kecamatan_tugas' => $kecamatanTugas,
+            'login_at'        => date('Y-m-d H:i:s'),
         ]);
 
         Session::setFingerprint();
@@ -168,9 +171,10 @@ class AuthController extends Controller
         if ($isAjax) {
             $home = ROLE_HOME[$user['role']] ?? '?page=dashboard';
             $this->success([
-                'user'     => $user['username'],
-                'role'     => $user['role'],
-                'redirect' => $home,
+                'user'            => $user['username'],
+                'role'            => $user['role'],
+                'kecamatan_tugas' => $kecamatanTugas,
+                'redirect'        => $home,
             ], 'Login berhasil');
         }
 

@@ -46,6 +46,16 @@ class AssignmentController extends Controller
             return;
         }
 
+        if ($action === 'download') {
+            $this->handleDownload();
+            return;
+        }
+
+        if ($action === 'suggest') {
+            $this->handleSuggest();
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             // GET: tampilkan halaman
             $filters = [
@@ -54,6 +64,9 @@ class AssignmentController extends Controller
                 'status' => $_GET['status'] ?? '',
                 'search' => $_GET['search'] ?? '',
             ];
+            // Server-side scope: override kdkec untuk role pegawai
+            $filters = $this->applyKecamatanScope($filters);
+            $this->data['kecamatan_scope'] = $this->getKecamatanScope();
 
             $pageNum        = max(1, (int) ($_GET['hal'] ?? 1));
             $perPage        = max(10, min(100, (int) ($_GET['per_page'] ?? 25)));
@@ -86,11 +99,11 @@ class AssignmentController extends Controller
                 ? $this->model->getDesa($filters['kdkec'])
                 : [];
 
-            // Petugas dropdown — single query, filter by role di client-side
-            $allPetugas = $this->model->getPetugasByRole('pcl', 'pml', 'task_force', 'mitra', 'admin');
-            $allPCL     = array_values(array_filter($allPetugas, fn($u) => in_array($u['role'], ['pcl', 'mitra', 'admin'])));
-            $allPML     = array_values(array_filter($allPetugas, fn($u) => in_array($u['role'], ['pml', 'admin'])));
-            $allTF      = array_values(array_filter($allPetugas, fn($u) => in_array($u['role'], ['task_force', 'admin'])));
+            // Petugas dropdown — hanya role PCL/PML/TF (data dari halaman petugas-lapangan)
+            $allPetugas = $this->model->getPetugasByRole('pcl', 'pml', 'task_force');
+            $allPCL     = array_values(array_filter($allPetugas, fn($u) => $u['role'] === 'pcl'));
+            $allPML     = array_values(array_filter($allPetugas, fn($u) => $u['role'] === 'pml'));
+            $allTF      = array_values(array_filter($allPetugas, fn($u) => $u['role'] === 'task_force'));
 
             // Import preview data dari session
             $importPreview = Session::get('import_assign_preview');
@@ -328,6 +341,55 @@ class AssignmentController extends Controller
         return (int) $val;
     }
 
+    /**
+     * Auto-suggest petugas berdasarkan kecamatan_bertugas match.
+     *
+     * GET ?action=suggest&kdkec=3509710  → resolve kdkec → nmkec, return suggested PCL/PML/TF/pegawai
+     * GET ?action=suggest&nmkec=KENCONG → return by name directly
+     *
+     * Response JSON:
+     *   {success, nmkec, suggestions: [...], groups: {pegawai, pcl, pml, task_force}}
+     */
+    private function handleSuggest(): void
+    {
+        $kdkec = $_GET['kdkec'] ?? '';
+        $nmkec = $_GET['nmkec'] ?? '';
+
+        if ($nmkec === '' && $kdkec !== '') {
+            $nmkec = (string) $this->model->getKecamatanName($kdkec);
+        }
+
+        if ($nmkec === '') {
+            $this->json(['success' => false, 'message' => 'Parameter kdkec atau nmkec wajib diisi.']);
+            return;
+        }
+
+        $rows = $this->model->getSuggestedPetugas($nmkec);
+
+        $groups = ['pegawai' => [], 'pcl' => [], 'pml' => [], 'task_force' => []];
+        foreach ($rows as $r) {
+            $role = $r['role'];
+            if (isset($groups[$role])) {
+                $groups[$role][] = [
+                    'id'           => (int) $r['id'],
+                    'username'     => $r['username'],
+                    'nama_lengkap' => $r['nama_lengkap'],
+                    'email'        => $r['email'],
+                    'source'       => $r['source'],
+                    'current_load' => (int) $r['current_load'],
+                ];
+            }
+        }
+
+        $this->json([
+            'success'     => true,
+            'nmkec'       => $nmkec,
+            'total'       => count($rows),
+            'suggestions' => $rows,
+            'groups'      => $groups,
+        ]);
+    }
+
     private function handleImportUpload(): void
     {
         $file = $_FILES['import_file'] ?? null;
@@ -416,6 +478,53 @@ class AssignmentController extends Controller
         $this->redirect('?page=dashboard&sub=assignment');
     }
 
+    private function handleDownload(): void
+    {
+        $kdkec = $_GET['kdkec'] ?? '';
+        $rows = $this->model->getSlsForDownload($kdkec);
+
+        $importDir = dirname(__DIR__, 2) . '/storage/import';
+        if (!is_dir($importDir)) {
+            mkdir($importDir, 0755, true);
+        }
+
+        $kecLabel = $kdkec !== '' ? $rows[0]['nmkec'] ?? $kdkec : 'kabupaten';
+        $fileName = "sls_{$kecLabel}_" . date('Ymd') . '.xlsx';
+        $tempFile = $importDir . '/' . $fileName;
+
+        $options = new Options();
+        $options->setTempFolder($importDir);
+        $writer = new Writer($options);
+        $writer->openToFile($tempFile);
+        $writer->addRow(Row::fromValues(['No', 'SLS', 'Desa', 'Kecamatan', 'Ketua SLS', 'KK', 'BTT', 'Usaha', 'Muatan']));
+
+        $no = 1;
+        foreach ($rows as $r) {
+            $writer->addRow(Row::fromValues([
+                $no++,
+                $r['nmsls'],
+                $r['nmdesa'],
+                $r['nmkec'],
+                $r['nama_ketua'],
+                $r['kk'] ?? 0,
+                $r['btt'] ?? 0,
+                $r['usaha'] ?? 0,
+                $r['muatan'] ?? 0,
+            ]));
+        }
+
+        $writer->close();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Content-Length: ' . filesize($tempFile));
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        readfile($tempFile);
+        unlink($tempFile);
+        exit;
+    }
+
     private function downloadTemplate(): void
     {
         $importDir = dirname(__DIR__, 2) . '/storage/import';
@@ -433,16 +542,14 @@ class AssignmentController extends Controller
 
         $pdo       = Database::instance()->pdo();
         $kecamatan = $this->model->getKecamatan();
-        $petugas   = $this->model->getPetugasByRole('pcl', 'pml', 'task_force', 'mitra', 'admin');
+        $petugas   = $this->model->getPetugasByRole('pcl', 'pml', 'task_force');
 
         $sampleRows = 0;
         foreach ($kecamatan as $kec) {
             $desaList = $this->model->getDesa($kec['kdkec']);
             foreach ($desaList as $desa) {
-                $stmt = $pdo->query(
-                    "SELECT nmsls FROM sipw_import WHERE kddesa = " . (int) $desa['kddesa'] . " LIMIT 2"
-                );
-                while ($row = $stmt->fetch()) {
+                $slsList = $this->model->getSlsByDesa($desa['kddesa'], 2);
+                foreach ($slsList as $row) {
                     $writer->addRow(Row::fromValues([
                         $row['nmsls'],
                         $desa['nmdesa'],

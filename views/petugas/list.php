@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0 fw-bold"><i class="fas fa-users me-2"></i>Manajemen Petugas</h5>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreate">
+    <button class="btn btn-se2026 btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreate">
         <i class="fas fa-plus me-1"></i>Tambah Petugas
     </button>
 </div>
@@ -53,6 +53,7 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Kec. Tugas</th>
                         <th>Status</th>
                         <th>Terakhir Login</th>
                         <th class="text-end" style="width:140px">Aksi</th>
@@ -68,6 +69,22 @@
                         <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
                         <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : ($u['role'] === 'pml' ? 'warning text-dark' : ($u['role'] === 'pcl' ? 'success' : ($u['role'] === 'task_force' ? 'info' : 'primary'))) ?>"><?= htmlspecialchars(ROLE_LABELS[$u['role']] ?? $u['role']) ?></span></td>
                         <td>
+                            <?php if ($u['role'] === 'pegawai' && !empty($u['kecamatan_tugas'])): ?>
+                                <?php
+                                $kd7 = $u['kecamatan_tugas'];
+                                $kd3 = strlen($kd7) === 7 ? substr($kd7, -3) : $kd7;
+                                $nmKec = $kec_name_map[$kd7] ?? $kec_name_map[$kd3] ?? null;
+                                ?>
+                                <span class="badge bg-se2026" title="<?= htmlspecialchars($kd7) ?>">
+                                    <i class="fas fa-map-marker-alt me-1"></i><?= htmlspecialchars($nmKec ?? $kd7) ?>
+                                </span>
+                            <?php elseif ($u['role'] === 'pegawai'): ?>
+                                <span class="badge bg-light text-muted"><i>belum di-set</i></span>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
                             <?php if ($u['status_akun'] === 'active'): ?>
                                 <span class="badge bg-success">Aktif</span>
                             <?php else: ?>
@@ -76,7 +93,7 @@
                         </td>
                         <td><small class="text-muted"><?= htmlspecialchars($u['last_login_at'] ?? '-') ?></small></td>
                         <td class="text-end">
-                            <button class="btn btn-outline-primary btn-sm py-0" onclick="editPetugas(<?= $u['id'] ?>, '<?= htmlspecialchars(addslashes($u['email'] ?? '')) ?>', '<?= $u['role'] ?>')">
+                            <button class="btn btn-outline-primary btn-sm py-0" onclick="editPetugas(<?= $u['id'] ?>, '<?= htmlspecialchars(addslashes($u['email'] ?? '')) ?>', '<?= $u['role'] ?>', '<?= htmlspecialchars($u['kecamatan_tugas'] ?? '') ?>')">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-outline-warning btn-sm py-0" onclick="resetPassword(<?= $u['id'] ?>, '<?= htmlspecialchars(addslashes($u['username'])) ?>')">
@@ -124,7 +141,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small">Role</label>
-                        <select name="role" class="form-select form-select-sm" required>
+                        <select name="role" id="create_role" class="form-select form-select-sm" required onchange="toggleKecamatan('create')">
                             <option value="">-- Pilih Role --</option>
                             <option value="pcl">PCL</option>
                             <option value="pml">PML</option>
@@ -133,10 +150,22 @@
                             <option value="pegawai">Pegawai</option>
                         </select>
                     </div>
+                    <div class="mb-3" id="create_kecamatan_wrap" style="display:none">
+                        <label class="form-label small">
+                            Kecamatan Tugas <span class="text-danger">*</span>
+                            <i class="fas fa-info-circle text-muted ms-1" title="Hanya untuk role Pegawai. Scope 1:1 — user hanya bisa akses 1 kecamatan."></i>
+                        </label>
+                        <select name="kecamatan_tugas" id="create_kecamatan" class="form-select form-select-sm">
+                            <option value="">-- Pilih Kecamatan --</option>
+                            <?php foreach (($kecamatan_list ?? []) as $k): ?>
+                                <option value="<?= htmlspecialchars($k['kd_kec']) ?>"><?= htmlspecialchars($k['nm_kec']) ?> (<?= htmlspecialchars($k['kd_kec']) ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+                    <button type="submit" class="btn btn-sm btn-se2026">Simpan</button>
                 </div>
             </div>
         </form>
@@ -161,7 +190,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small">Role</label>
-                        <select name="role" id="edit_role" class="form-select form-select-sm" required>
+                        <select name="role" id="edit_role" class="form-select form-select-sm" required onchange="toggleKecamatan('edit')">
                             <option value="admin">Administrator</option>
                             <option value="operator">Operator</option>
                             <option value="pegawai">Pegawai</option>
@@ -171,10 +200,22 @@
                             <option value="task_force">Task Force</option>
                         </select>
                     </div>
+                    <div class="mb-3" id="edit_kecamatan_wrap" style="display:none">
+                        <label class="form-label small">
+                            Kecamatan Tugas
+                            <i class="fas fa-info-circle text-muted ms-1" title="Hanya untuk role Pegawai. Kosongkan jika tidak ada scope."></i>
+                        </label>
+                        <select name="kecamatan_tugas" id="edit_kecamatan" class="form-select form-select-sm">
+                            <option value="">-- (Tidak ada scope) --</option>
+                            <?php foreach (($kecamatan_list ?? []) as $k): ?>
+                                <option value="<?= htmlspecialchars($k['kd_kec']) ?>"><?= htmlspecialchars($k['nm_kec']) ?> (<?= htmlspecialchars($k['kd_kec']) ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+                    <button type="submit" class="btn btn-sm btn-se2026">Simpan</button>
                 </div>
             </div>
         </form>
@@ -216,10 +257,19 @@ function filterRole(role) {
     window.location.href = url.toString();
 }
 
-function editPetugas(id, email, role) {
+function toggleKecamatan(prefix) {
+    const roleSel = document.getElementById(prefix + '_role');
+    const wrap    = document.getElementById(prefix + '_kecamatan_wrap');
+    if (!roleSel || !wrap) return;
+    wrap.style.display = (roleSel.value === 'pegawai') ? '' : 'none';
+}
+
+function editPetugas(id, email, role, kecamatanTugas) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_email').value = email;
     document.getElementById('edit_role').value = role;
+    document.getElementById('edit_kecamatan').value = kecamatanTugas || '';
+    toggleKecamatan('edit');
     new bootstrap.Modal(document.getElementById('modalEdit')).show();
 }
 
@@ -228,4 +278,10 @@ function resetPassword(id, username) {
     document.getElementById('reset_username').textContent = 'Reset password untuk: ' + username;
     new bootstrap.Modal(document.getElementById('modalResetPassword')).show();
 }
+
+// On load: jika ada error flash, buka kembali modal create
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    if (hash === '#modalCreate') new bootstrap.Modal(document.getElementById('modalCreate')).show();
+});
 </script>

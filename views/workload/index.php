@@ -32,6 +32,19 @@
 
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold">Kecamatan</label>
+                    <?php if (!empty($kecamatan_scope)): ?>
+                        <?php
+                        $scopeKecName = '';
+                        foreach ($kecamatan as $kk) {
+                            if (substr($kecamatan_scope, -3) === $kk['kdkec']) {
+                                $scopeKecName = $kk['nmkec'];
+                                break;
+                            }
+                        }
+                        ?>
+                        <input type="hidden" name="kdkec" value="<?= htmlspecialchars(substr($kecamatan_scope, -3)) ?>">
+                        <input type="text" class="form-control" value="<?= htmlspecialchars($scopeKecName) ?>" readonly disabled>
+                    <?php else: ?>
                     <select name="kdkec" class="form-select">
                         <option value="">Semua Kecamatan</option>
                         <?php foreach ($kecamatan as $k): ?>
@@ -40,10 +53,11 @@
                         </option>
                         <?php endforeach; ?>
                     </select>
+                    <?php endif; ?>
                 </div>
 
                 <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-se2026">
                         <i class="fas fa-filter me-1"></i>Terapkan
                     </button>
                     <a href="?page=dashboard&sub=workload" class="btn btn-outline-secondary">Reset</a>
@@ -222,8 +236,8 @@ document.querySelectorAll('.btn-detail').forEach(function(btn) {
             datasets: [{
                 label: 'Total Muatan',
                 data: data,
-                backgroundColor: 'rgba(13, 110, 253, 0.7)',
-                borderColor: 'rgba(13, 110, 253, 1)',
+                backgroundColor: 'rgba(244, 123, 32, 0.7)',
+                borderColor: 'rgba(244, 123, 32, 1)',
                 borderWidth: 1,
                 borderRadius: 4
             }]

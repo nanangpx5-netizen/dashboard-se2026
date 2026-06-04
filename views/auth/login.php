@@ -4,7 +4,7 @@
             <div class="card-body p-5">
                 <div class="text-center mb-4">
                     <div class="mb-3">
-                        <i class="fas fa-chart-line text-primary" style="font-size: 2.5rem;"></i>
+                        <i class="fas fa-chart-line text-se2026" style="font-size: 2.5rem;"></i>
                     </div>
                     <h5 class="fw-bold mb-1"><?= APP_NAME ?></h5>
                     <p class="text-muted small mb-0">BPS Kabupaten Jember</p>
@@ -45,7 +45,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+                    <button type="submit" class="btn btn-se2026 w-100 fw-semibold py-2">
                         <i class="fas fa-sign-in-alt me-2"></i>Login
                     </button>
                 </form>

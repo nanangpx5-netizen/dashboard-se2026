@@ -10,7 +10,7 @@
     <div class="text-center">
         <h1 class="display-1 text-warning fw-bold">401</h1>
         <p class="fs-5 text-muted">Anda perlu login untuk mengakses halaman ini.</p>
-        <a href="?page=login" class="btn btn-primary">Login</a>
+        <a href="?page=login" class="btn btn-se2026">Login</a>
     </div>
 </body>
 </html>

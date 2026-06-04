@@ -23,6 +23,42 @@ class AssignmentModel
     /**
      * Semua assignment dengan join users (DataTables-ready)
      */
+    /**
+     * SLS data for download/export template
+     */
+    /**
+     * SLS sample names for template (max 2 per desa)
+     */
+    public function getSlsByDesa(string $kddesa, int $limit = 2): array
+    {
+        $stmt = $this->pdo->prepare("SELECT nmsls FROM sipw_import WHERE kddesa = ? LIMIT ?");
+        $stmt->execute([$kddesa, $limit]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * SLS data for download/export template
+     */
+    public function getSlsForDownload(string $kdkec = ''): array
+    {
+        $sql = "
+            SELECT si.nmsls, si.nmdesa, si.nmkec, si.nama_ketua, si.kk, si.btt, si.usaha, si.muatan
+            FROM sipw_import si
+            LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
+            LEFT JOIN mfd_kec mfd ON mfd.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($kdkec !== '') {
+            $sql .= ' AND si.kdkec = ?';
+            $params[] = $kdkec;
+        }
+        $sql .= ' ORDER BY mfd.urutan, si.nmdesa, si.nmsls';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public function getAll(array $filters = []): array
     {
         $sql = "
@@ -42,9 +78,12 @@ class AssignmentModel
                 si.kddesa,
                 si.nama_ketua,
                 si.muatan,
-                pc.username  AS pencacah,
-                pw.username  AS pengawas,
-                tf.username  AS task_force
+                pc.username     AS pencacah,
+                pc.nama_lengkap AS pencacah_nama,
+                pw.username     AS pengawas,
+                pw.nama_lengkap AS pengawas_nama,
+                tf.username     AS task_force,
+                tf.nama_lengkap AS task_force_nama
             FROM sipw_assignment sa
             JOIN sipw_import si ON si.id = sa.sipw_id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
@@ -69,8 +108,8 @@ class AssignmentModel
         }
         if (!empty($filters['search'])) {
             $s = '%' . $filters['search'] . '%';
-            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ?)";
-            $params = array_merge($params, [$s, $s, $s, $s, $s]);
+            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ?)";
+            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s]);
         }
 
         $sql .= " ORDER BY mfd.urutan, si.nmdesa, si.nmsls";
@@ -92,9 +131,12 @@ class AssignmentModel
                 sa.id, sa.sipw_id, sa.pencacah_id, sa.pengawas_id, sa.task_force_id,
                 sa.status, sa.created_at, sa.updated_at,
                 si.nmsls, si.nmdesa, si.nmkec, si.kdkec, si.kddesa, si.nama_ketua, si.muatan,
-                pc.username AS pencacah,
-                pw.username AS pengawas,
-                tf.username AS task_force
+                pc.username     AS pencacah,
+                pc.nama_lengkap AS pencacah_nama,
+                pw.username     AS pengawas,
+                pw.nama_lengkap AS pengawas_nama,
+                tf.username     AS task_force,
+                tf.nama_lengkap AS task_force_nama
             FROM sipw_assignment sa
             JOIN sipw_import si ON si.id = sa.sipw_id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
@@ -152,8 +194,8 @@ class AssignmentModel
         }
         if (!empty($filters['search'])) {
             $s = '%' . $filters['search'] . '%';
-            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ?)";
-            $params = array_merge($params, [$s, $s, $s, $s, $s]);
+            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ?)";
+            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s]);
         }
         return [$sql, $params];
     }
@@ -382,7 +424,7 @@ class AssignmentModel
     public function getPetugas(?string $search = null): array
     {
         $sql = "
-            SELECT id, username, role, email
+            SELECT id, username, nama_lengkap, role, email
             FROM users
             WHERE status_akun = 'active'
         ";
@@ -390,8 +432,8 @@ class AssignmentModel
 
         if ($search) {
             $s = '%' . $search . '%';
-            $sql .= " AND (username LIKE ? OR email LIKE ? OR role LIKE ?)";
-            $params = [$s, $s, $s];
+            $sql .= " AND (username LIKE ? OR nama_lengkap LIKE ? OR email LIKE ? OR role LIKE ?)";
+            $params = [$s, $s, $s, $s];
         }
 
         $sql .= " ORDER BY role, username";
@@ -412,7 +454,7 @@ class AssignmentModel
 
         $placeholders = implode(',', array_fill(0, count($roles), '?'));
         $stmt = $this->pdo->prepare("
-            SELECT id, username, email, role
+            SELECT id, username, nama_lengkap, email, role
             FROM users
             WHERE status_akun = 'active' AND role IN ({$placeholders})
             ORDER BY role, username
@@ -480,6 +522,7 @@ class AssignmentModel
             SELECT
                 u.id,
                 u.username,
+                u.nama_lengkap,
                 u.role,
                 SUM(CASE WHEN sa.pencacah_id = u.id THEN 1 ELSE 0 END) AS as_pencacah,
                 SUM(CASE WHEN sa.pengawas_id = u.id THEN 1 ELSE 0 END) AS as_pengawas,
@@ -496,5 +539,69 @@ class AssignmentModel
             ORDER BY as_pencacah + as_pengawas + as_task_force DESC
         ";
         return $this->pdo->query($sql)->fetchAll();
+    }
+
+    /**
+     * Saran petugas berdasarkan kecamatan_bertugas match.
+     *
+     * Untuk assignment di kecamatan X, prioritaskan user yang
+     * `kecamatan_bertugas` memuat X (pegawai organik & mitra).
+     *
+     * @param string $nmkec nama kecamatan (mis. 'KENCONG')
+     * @return array  List of {id, username, nama_lengkap, email, role, current_load, source}
+     */
+    public function getSuggestedPetugas(string $nmkec): array
+    {
+        if ($nmkec === '') return [];
+
+        $sql = "
+            SELECT
+                u.id,
+                u.username,
+                u.nama_lengkap,
+                u.email,
+                u.role,
+                u.kecamatan_bertugas,
+                COALESCE(ld.cnt, 0) AS current_load,
+                CASE
+                    WHEN u.role = 'pegawai' THEN 'organik'
+                    WHEN u.role IN ('pcl','pml','task_force') THEN 'mitra'
+                    ELSE 'other'
+                END AS source
+            FROM users u
+            LEFT JOIN (
+                SELECT id, SUM(c) AS cnt FROM (
+                    SELECT pencacah_id AS id, COUNT(*) AS c FROM sipw_assignment GROUP BY pencacah_id
+                    UNION ALL
+                    SELECT pengawas_id AS id, COUNT(*) AS c FROM sipw_assignment GROUP BY pengawas_id
+                    UNION ALL
+                    SELECT task_force_id AS id, COUNT(*) AS c FROM sipw_assignment GROUP BY task_force_id
+                ) t GROUP BY id
+            ) ld ON ld.id = u.id
+            WHERE u.status_akun = 'active'
+              AND u.role IN ('pcl','pml','task_force','pegawai')
+              AND u.kecamatan_bertugas IS NOT NULL
+              AND u.kecamatan_bertugas != ''
+              AND u.kecamatan_bertugas REGEXP ?
+            ORDER BY
+                FIELD(u.role, 'pegawai', 'pcl', 'pml', 'task_force'),
+                current_load ASC,
+                u.username
+        ";
+        $pattern = '(^|, )' . preg_quote($nmkec, '/') . '(,|$)';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$pattern]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Resolve kdkec → nmkec untuk dipakai di suggest.
+     */
+    public function getKecamatanName(string $kdkec): ?string
+    {
+        $stmt = $this->pdo->prepare("SELECT DISTINCT nmkec FROM sipw_import WHERE kdkec = ? LIMIT 1");
+        $stmt->execute([$kdkec]);
+        $r = $stmt->fetch();
+        return $r ? $r['nmkec'] : null;
     }
 }

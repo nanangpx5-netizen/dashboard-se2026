@@ -29,6 +29,7 @@ class ReportController extends Controller
             'csv'     => $this->exportCsv(),
             'pdf'     => $this->exportPdf(),
             'print'   => $this->printView(),
+            'preview' => $this->previewJson(),
             default   => $this->showPage(),
         };
     }
@@ -38,10 +39,15 @@ class ReportController extends Controller
     private function showPage(): void
     {
         $kecamatan = $this->model->kecamatanList();
+        $exec      = $this->model->executiveSummary();
+        $exec['progress'] = ($exec['total_sls'] ?? 0) > 0
+            ? round(($exec['selesai'] ?? 0) / ($exec['total_sls'] ?? 1) * 100, 1)
+            : 0;
 
         $this->data['page_title'] = 'Laporan & Ekspor';
         $this->render('report/index', [
             'kecamatan' => $kecamatan,
+            'exec'      => $exec,
         ]);
     }
 
@@ -50,16 +56,21 @@ class ReportController extends Controller
     private function buildData(string $jenis, ?string $kdkec = null): array
     {
         return match ($jenis) {
-            'kecamatan' => $this->model->rekapKecamatan(),
-            'pencacah'  => $this->model->rekapPencacah(),
-            'pengawas'  => $this->model->rekapPengawas(),
-            'detail'    => $this->model->rekapKecamatanFiltered($kdkec),
-            'snapshot'  => [
-                'summary'  => $this->model->dashboardSnapshot(),
-                'exec'     => $this->model->executiveSummary(),
-                'kecamatan' => $this->model->rekapKecamatan(),
+            'kecamatan'  => $this->model->rekapKecamatan(),
+            'pencacah'   => $this->model->rekapPencacah(),
+            'pengawas'   => $this->model->rekapPengawas(),
+            'task_force' => $this->model->rekapTaskForce(),
+            'detail'     => $this->model->rekapKecamatanFiltered($kdkec),
+            'snapshot'   => [
+                'summary'    => $this->model->dashboardSnapshot(),
+                'exec'       => $this->model->executiveSummary(),
+                'kecamatan'  => $this->model->rekapKecamatan(),
             ],
-            default     => [],
+            'prelist'    => [
+                'summary'    => $this->model->prelistSummary(),
+                'per_kec'    => $this->model->prelistPerKec(),
+            ],
+            default      => [],
         };
     }
 
@@ -82,10 +93,12 @@ class ReportController extends Controller
             $this->writeSnapshotExcel($writer, $data);
         } elseif ($jenis === 'kecamatan') {
             $this->writeRekapKecExcel($writer, $data);
-        } elseif ($jenis === 'pencacah' || $jenis === 'pengawas') {
+        } elseif ($jenis === 'pencacah' || $jenis === 'pengawas' || $jenis === 'task_force') {
             $this->writeRekapPetugasExcel($writer, $data, $jenis);
         } elseif ($jenis === 'detail') {
             $this->writeDetailExcel($writer, $data);
+        } elseif ($jenis === 'prelist') {
+            $this->writePrelistExcel($writer, $data);
         }
 
         $writer->close();
@@ -111,7 +124,7 @@ class ReportController extends Controller
 
     private function writeRekapPetugasExcel(Writer $w, array $data, string $jenis): void
     {
-        $label = $jenis === 'pencacah' ? 'PCL' : 'PML';
+        $label = match ($jenis) { 'pencacah' => 'PCL', 'pengawas' => 'PML', 'task_force' => 'TF', default => 'Petugas' };
         $w->addRow(Row::fromValues([
             'No', 'Nama ' . $label, 'Total SLS', 'Selesai', 'Proses', 'Belum',
             'Total KK', 'Total Usaha', 'Total Muatan', 'Wilayah',
@@ -120,8 +133,35 @@ class ReportController extends Controller
         foreach ($data as $r) {
             $w->addRow(Row::fromValues([
                 $no++, $r['username'], (int) $r['total_sls'], (int) $r['selesai'],
-                (int) $r['proses'], (int) $r['belum'], (int) $r['total_kk'],
-                (int) $r['total_usaha'], (int) $r['total_muatan'], $r['kecamatan'],
+                (int) $r['proses'], (int) $r['belum'], (int) ($r['total_kk'] ?? 0),
+                (int) ($r['total_usaha'] ?? 0), (int) ($r['total_muatan'] ?? 0), $r['kecamatan'] ?? '-',
+            ]));
+        }
+    }
+
+    private function writePrelistExcel(Writer $w, array $data): void
+    {
+        $s = $data['summary'];
+        $w->addRow(Row::fromValues(['RINGKASAN PRELIST SE2026 — KAB. JEMBER']));
+        $w->addRow(Row::fromValues(['Kab/Kota', number_format((int) $s['total_kabkota'])]));
+        $w->addRow(Row::fromValues(['Kecamatan', number_format((int) $s['total_kecamatan'])]));
+        $w->addRow(Row::fromValues(['Desa', number_format((int) $s['total_desa'])]));
+        $w->addRow(Row::fromValues(['Total SLS', number_format((int) $s['total_sls'])]));
+        $w->addRow(Row::fromValues(['Total KK', number_format((int) $s['total_kk'])]));
+        $w->addRow(Row::fromValues(['Total UTP', number_format((int) $s['total_utp'])]));
+        $w->addRow(Row::fromValues(['Total Muatan', number_format((int) $s['total_muatan'])]));
+        $w->addRow(Row::fromValues([]));
+        $w->addRow(Row::fromValues(['REKAP PER KECAMATAN']));
+        $w->addRow(Row::fromValues([
+            'No', 'Kecamatan', 'Desa', 'Total SLS', 'Total KK', 'Total UTP',
+            'Total Muatan', 'Usaha SE2016',
+        ]));
+        $no = 1;
+        foreach ($data['per_kec'] as $r) {
+            $w->addRow(Row::fromValues([
+                $no++, $r['kecamatan'], (int) $r['total_desa'], (int) $r['total_sls'],
+                (int) $r['total_kk'], (int) $r['total_utp'], (int) $r['total_muatan'],
+                (int) $r['usaha_se2016'],
             ]));
         }
     }
@@ -189,16 +229,25 @@ class ReportController extends Controller
             foreach ($data as $i => $r) {
                 fputcsv($f, [$i+1, $r['kecamatan'], $r['total_sls'], $r['assigned'], $r['proses'], $r['selesai'], $r['total_kk'], $r['total_usaha'], $r['total_muatan'], $r['jumlah_pcl'], $r['jumlah_pml']]);
             }
-        } elseif ($jenis === 'pencacah' || $jenis === 'pengawas') {
-            $label = $jenis === 'pencacah' ? 'PCL' : 'PML';
+        } elseif ($jenis === 'pencacah' || $jenis === 'pengawas' || $jenis === 'task_force') {
+            $label = match ($jenis) { 'pencacah' => 'PCL', 'pengawas' => 'PML', 'task_force' => 'TF', default => 'Petugas' };
             fputcsv($f, ['No','Nama '.$label,'Total SLS','Selesai','Proses','Belum','Total KK','Total Usaha','Total Muatan','Wilayah']);
             foreach ($data as $i => $r) {
-                fputcsv($f, [$i+1, $r['username'], $r['total_sls'], $r['selesai'], $r['proses'], $r['belum'], $r['total_kk'], $r['total_usaha'], $r['total_muatan'], $r['kecamatan']]);
+                fputcsv($f, [$i+1, $r['username'], $r['total_sls'], $r['selesai'], $r['proses'], $r['belum'], $r['total_kk'] ?? 0, $r['total_usaha'] ?? 0, $r['total_muatan'] ?? 0, $r['kecamatan'] ?? '-']);
             }
         } elseif ($jenis === 'detail') {
             fputcsv($f, ['No','Kecamatan','Desa','SLS','Ketua','KK','Usaha','Muatan','Pencacah','Pengawas','Status']);
             foreach ($data as $i => $r) {
                 fputcsv($f, [$i+1, $r['kecamatan'], $r['desa'], $r['sls'], $r['nama_ketua'], $r['kk'], $r['usaha'], $r['muatan'], $r['pencacah'], $r['pengawas'], $r['status']]);
+            }
+        } elseif ($jenis === 'prelist') {
+            $s = $data['summary'];
+            fputcsv($f, ['RINGKASAN PRELIST SE2026']);
+            fputcsv($f, ['Kecamatan', $s['total_kecamatan'], 'Desa', $s['total_desa'], 'SLS', $s['total_sls'], 'KK', $s['total_kk'], 'UTP', $s['total_utp'], 'Muatan', $s['total_muatan']]);
+            fputcsv($f, []);
+            fputcsv($f, ['No','Kecamatan','Desa','Total SLS','KK','UTP','Muatan','Usaha SE2016']);
+            foreach ($data['per_kec'] as $i => $r) {
+                fputcsv($f, [$i+1, $r['kecamatan'], $r['total_desa'], $r['total_sls'], $r['total_kk'], $r['total_utp'], $r['total_muatan'], $r['usaha_se2016']]);
             }
         }
 
@@ -250,6 +299,25 @@ class ReportController extends Controller
         ]);
     }
 
+    // ─── PREVIEW JSON ────────────────────────────────────────────────────
+
+    private function previewJson(): void
+    {
+        $jenis = $_GET['jenis'] ?? 'kecamatan';
+        $kdkec = $_GET['kdkec'] ?? null;
+        $data  = $this->buildData($jenis, $kdkec);
+
+        if ($jenis === 'snapshot') {
+            $result = $data;
+        } elseif ($jenis === 'prelist') {
+            $result = $data;
+        } else {
+            $result = ['rows' => array_slice($data, 0, 10), 'total' => count($data)];
+        }
+
+        $this->json(['success' => true, 'data' => $result, 'jenis' => $jenis]);
+    }
+
     // ─── HTML BUILDER (shared by print + PDF) ───────────────────────────
 
     private function renderPrintHtml(string $jenis, array $data, bool $absoluteUrl): string
@@ -270,12 +338,14 @@ class ReportController extends Controller
     private function jenisLabel(string $jenis): string
     {
         return match ($jenis) {
-            'kecamatan' => 'Rekap per Kecamatan',
-            'pencacah'  => 'Rekap per Pencacah (PCL)',
-            'pengawas'  => 'Rekap per Pengawas (PML)',
-            'detail'    => 'Detail Wilayah',
-            'snapshot'  => 'Dashboard Snapshot',
-            default     => 'Laporan',
+            'kecamatan'  => 'Rekap per Kecamatan',
+            'pencacah'   => 'Rekap per Pencacah (PCL)',
+            'pengawas'   => 'Rekap per Pengawas (PML)',
+            'task_force' => 'Rekap per Task Force',
+            'detail'     => 'Detail Wilayah',
+            'snapshot'   => 'Dashboard Snapshot',
+            'prelist'    => 'Prelist SE2026 Jember',
+            default      => 'Laporan',
         };
     }
 

@@ -3,8 +3,8 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 $root = 'C:/laragon/www/dashboard-se2026';
-require $root . '/app/bootstrap.php';
-use App\Helpers\Database;
+require $root . '/src/bootstrap.php';
+use App\Core\Database;
 
 $db = Database::getInstance();
 $file = $root . '/data/rekap-sls.xlsx';

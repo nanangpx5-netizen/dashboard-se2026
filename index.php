@@ -110,9 +110,12 @@ $controllerMap = [
         'monitoring' => ['MonitoringController', 'index'],
         'workload'   => ['WorkloadController', 'index'],
         'wilayah'    => ['WilayahController', 'index'],
-        'petugas'    => ['PetugasController', 'index'],
-        'audit'      => ['AuditLogController', 'index'],
+        'petugas'           => ['PetugasController', 'index'],
+        'petugas-lapangan'  => ['PclPmlTfController', 'index'],
+        'audit'             => ['AuditLogController', 'index'],
         'report'     => ['ReportController', 'index'],
+        'insight'    => ['InsightController', 'index'],
+        'pegawai-activity' => ['PegawaiActivityController', 'index'],
     ],
 ];
 

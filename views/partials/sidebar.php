@@ -8,7 +8,7 @@ $isAdmin = $role === 'admin' || $role === 'operator';
 <aside class="sidebar d-flex flex-column flex-shrink-0 bg-dark text-white" id="mainSidebar" style="width: 250px; min-height: 100vh;">
     <div class="sidebar-header p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
-            <i class="fas fa-database text-primary"></i>
+            <i class="fas fa-database text-se2026"></i>
             <div>
                 <h6 class="mb-0 text-white">SE2026</h6>
                 <small class="text-secondary">Dashboard Monitoring</small>
@@ -34,41 +34,44 @@ $isAdmin = $role === 'admin' || $role === 'operator';
     <nav class="flex-grow-1 p-3">
         <ul class="nav flex-column">
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === '' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === '' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard">
                     <i class="fas fa-home me-2"></i><span>Beranda</span>
                 </a>
             </li>
 
             <?php if ($isAdmin): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'import' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=import">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'import' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=import">
                     <i class="fas fa-file-import me-2"></i><span>Import SIPW</span>
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if ($isAdmin || $role === 'pegawai'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'assignment' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=assignment">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'assignment' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=assignment">
                     <i class="fas fa-tasks me-2"></i><span>Assignment</span>
                 </a>
             </li>
             <?php endif; ?>
 
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'monitoring' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=monitoring">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'monitoring' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=monitoring">
                     <i class="fas fa-chart-bar me-2"></i><span>Monitoring</span>
                 </a>
             </li>
 
             <?php if ($isAdmin || $role === 'pegawai'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'workload' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=workload">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'workload' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=workload">
                     <i class="fas fa-weight me-2"></i><span>Beban Kerja</span>
                 </a>
             </li>
             <?php endif; ?>
 
-            <?php if ($isAdmin || $role === 'pegawai' || $role === 'task_force'): ?>
+            <?php if ($isAdmin || $role === 'task_force'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'wilayah' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=wilayah">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'wilayah' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=wilayah">
                     <i class="fas fa-map-marker-alt me-2"></i><span>Wilayah</span>
                 </a>
             </li>
@@ -76,23 +79,44 @@ $isAdmin = $role === 'admin' || $role === 'operator';
 
             <?php if ($role === 'admin'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'petugas' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=petugas">
-                    <i class="fas fa-users me-2"></i><span>Petugas</span>
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'petugas-lapangan' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=petugas-lapangan">
+                    <i class="fas fa-people-carry-box me-2"></i><span>PCL / PML / TF</span>
                 </a>
             </li>
-            <?php endif; ?>
-
-            <?php if ($isAdmin || $role === 'pegawai'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'report' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=report">
-                    <i class="fas fa-file-alt me-2"></i><span>Laporan</span>
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'petugas' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=petugas">
+                    <i class="fas fa-users me-2"></i><span>Petugas</span>
                 </a>
             </li>
             <?php endif; ?>
 
             <?php if ($isAdmin): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'audit' ? 'active bg-primary rounded' : '' ?>" href="?page=dashboard&sub=audit">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'report' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=report">
+                    <i class="fas fa-file-alt me-2"></i><span>Laporan</span>
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if ($isAdmin || in_array($role, ['task_force', 'pml', 'pcl'], true)): ?>
+            <li class="nav-item mb-1">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'insight' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=insight">
+                    <i class="fas fa-chart-line me-2"></i><span>Insight &amp; Analisa</span>
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if ($isAdmin): ?>
+            <li class="nav-item mb-1">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'pegawai-activity' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=pegawai-activity">
+                    <i class="fas fa-user-clock me-2"></i><span>Aktivitas Pegawai</span>
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if ($isAdmin): ?>
+            <li class="nav-item mb-1">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'audit' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=audit">
                     <i class="fas fa-history me-2"></i><span>Audit Log</span>
                 </a>
             </li>

@@ -10,7 +10,7 @@
     <div class="text-center">
         <h1 class="display-1 text-secondary fw-bold">404</h1>
         <p class="fs-5 text-muted">Halaman yang Anda cari tidak ditemukan.</p>
-        <a href="?page=dashboard" class="btn btn-primary">Kembali ke Dashboard</a>
+        <a href="?page=dashboard" class="btn btn-se2026">Kembali ke Dashboard</a>
     </div>
 </body>
 </html>

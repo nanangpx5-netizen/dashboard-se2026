@@ -95,6 +95,7 @@ class DashboardController extends Controller
                     COALESCE(SUM(CASE WHEN klas=1 THEN 1 ELSE 0 END),0) AS total_sls_urban,
                     COALESCE(SUM(CASE WHEN klas=2 THEN 1 ELSE 0 END),0) AS total_sls_rural
                 FROM sipw_import
+                WHERE kdkab = '09'
             ")->fetch();
 
             $roleCounts = $pdo->query("
@@ -123,7 +124,7 @@ class DashboardController extends Controller
     private function getWilayahData(\PDO $pdo): array
     {
         return Cache::remember('dashboard_wilayah', 60, function () use ($pdo): array {
-            return $pdo->query("
+            $rows = $pdo->query("
                 SELECT
                     COALESCE(mfd.nama_kecamatan, CONCAT('Kec. ', si.kdkec)) AS label,
                     si.kdkec,
@@ -145,6 +146,13 @@ class DashboardController extends Controller
                 GROUP BY si.kdkec, mfd.urutan, mfd.nama_kecamatan
                 ORDER BY mfd.urutan
             ")->fetchAll();
+            foreach ($rows as &$r) {
+                $r['progress'] = $r['total_sls'] > 0
+                    ? round(($r['selesai'] / $r['total_sls']) * 100, 0)
+                    : 0;
+            }
+            unset($r);
+            return $rows;
         });
     }
 

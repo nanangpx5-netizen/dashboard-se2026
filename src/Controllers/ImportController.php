@@ -85,9 +85,11 @@ class ImportController extends Controller
         $totalKec    = $existingStats['total_kec'];
         $totalDesa   = $existingStats['total_desa'];
 
-        // Import history
-        $history = $this->processor->getImportHistory(20);
-        $importStats   = $this->processor->getImportStats();
+        // Import history (paginated)
+        $pageNum    = max(1, (int) ($_GET['hal'] ?? 1));
+        $perPage    = max(10, min(100, (int) ($_GET['per_page'] ?? 10)));
+        $history    = $this->processor->getImportHistory($pageNum, $perPage);
+        $importStats = $this->processor->getImportStats();
 
         // Session data untuk preview
         $sessionFile = Session::get('import_file');
@@ -104,7 +106,11 @@ class ImportController extends Controller
             'total_muatan' => $totalMuatan,
             'total_kec'    => $totalKec,
             'total_desa'   => $totalDesa,
-            'history'      => $history,
+            'history'         => $history['rows'],
+            'history_total'   => $history['total'],
+            'page_num'        => $history['page'],
+            'per_page'        => $history['per_page'],
+            'total_pages'     => $history['total_pages'],
             'stats'        => $importStats,
             'preview_info' => $previewInfo,
             'has_file'     => $sessionFile && is_file($sessionFile),

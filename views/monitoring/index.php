@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0 fw-bold"><i class="fas fa-monitor-waveform me-2"></i>Monitoring Wilayah</h5>
-    <small class="text-muted"><?= date('d F Y H:i') ?> WIB</small>
+    <small class="text-muted" id="clockDisplay"><?= date('d F Y H:i') ?> WIB</small>
 </div>
 
 <div class="row g-2 mb-4">
@@ -16,7 +16,7 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body py-3">
                 <small class="text-muted">Sudah Assign</small>
-                <h4 class="fw-bold mt-1 mb-0 text-success"><?= number_format($summary['assigned_sls'] ?? 0) ?></h4>
+                <h4 class="fw-bold mt-1 mb-0 text-success" id="statAssigned"><?= number_format($summary['assigned_sls'] ?? 0) ?></h4>
             </div>
         </div>
     </div>
@@ -24,7 +24,7 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body py-3">
                 <small class="text-muted">Proses</small>
-                <h4 class="fw-bold mt-1 mb-0 text-warning"><?= number_format($summary['progress_sls'] ?? 0) ?></h4>
+                <h4 class="fw-bold mt-1 mb-0 text-warning" id="statProses"><?= number_format($summary['progress_sls'] ?? 0) ?></h4>
             </div>
         </div>
     </div>
@@ -32,7 +32,137 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body py-3">
                 <small class="text-muted">Selesai</small>
-                <h4 class="fw-bold mt-1 mb-0 text-success"><?= number_format($summary['completed_sls'] ?? 0) ?></h4>
+                <h4 class="fw-bold mt-1 mb-0 text-success" id="statSelesai"><?= number_format($summary['completed_sls'] ?? 0) ?></h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h6 class="mb-0 fw-semibold"><i class="fas fa-map me-1 text-se2026"></i>Kecamatan — Status Assign</h6>
+    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadKecamatanSummary()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+    <div class="ms-auto small text-muted">
+        <i class="fas fa-layer-group me-1"></i><span id="kecTotalAssigned">0</span> dari <span id="kecTotal">0</span> kecamatan ter-assign
+    </div>
+</div>
+
+<div class="row g-2 mb-4" id="kecamatanCards">
+    <div class="col-12 text-center text-muted py-4">
+        <span class="spinner-border spinner-border-sm me-2"></span>Memuat data kecamatan...
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-tree me-1 text-se2026"></i>Desa — Rincian per Kecamatan</small>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadDesaSummary()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <select id="desaKdkecFilter" class="form-select form-select-sm" onchange="loadDesaSummary()">
+                        <option value="">-- Pilih Kecamatan --</option>
+                        <?php foreach ($kec_summary as $k): ?>
+                            <option value="<?= htmlspecialchars($k['kdkec']) ?>"><?= htmlspecialchars($k['nmkec']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div id="desaSummaryContainer" class="small" style="max-height:320px; overflow-y:auto;">
+                    <div class="text-center text-muted py-4">Pilih kecamatan untuk melihat rincian desa</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <ul class="nav nav-tabs card-header-tabs" id="slsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-sls-btn" data-bs-toggle="tab" data-bs-target="#tabSls" type="button" role="tab">
+                            <i class="fas fa-database me-1"></i>SLS Assign
+                            <span class="badge bg-secondary ms-1" id="slsBadgeCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-nonsls-btn" data-bs-toggle="tab" data-bs-target="#tabNonSls" type="button" role="tab">
+                            <i class="fas fa-list me-1"></i>Non-SLS (Prelist)
+                            <span class="badge bg-secondary ms-1" id="nonslsBadgeCount"><?= number_format($total_prelist) ?></span>
+                        </button>
+                    </li>
+                </ul>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadSlsData(); loadNonSlsData();" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            <div class="card-body p-0 tab-content">
+                <div class="tab-pane fade show active" id="tabSls" role="tabpanel">
+                    <div class="p-2 border-bottom bg-light d-flex gap-2 align-items-center flex-wrap">
+                        <input type="text" id="slsSearchInput" class="form-control form-control-sm" style="width:200px" placeholder="Cari SLS/kecamatan/desa..." onkeyup="slsSearchTimeout()">
+                        <button class="btn btn-sm btn-se2026 py-0" onclick="loadSlsData()"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0 small" id="tableSlsAssigned">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kecamatan</th>
+                                    <th>Desa</th>
+                                    <th>SLS</th>
+                                    <th class="text-center">KK</th>
+                                    <th class="text-center">Muatan</th>
+                                    <th>PCL</th>
+                                    <th>PML</th>
+                                    <th>TF</th>
+                                    <th class="text-center">Status</th>
+                                    <th>Assign Terakhir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="slsAssignedBody">
+                                <tr><td colspan="10" class="text-center text-muted py-4">Belum ada data SLS yang di-assign</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-2 small text-muted d-flex justify-content-between align-items-center">
+                        <span id="slsInfo">0 baris</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary py-0" id="slsPrevBtn" onclick="slsPageChange(-1)" disabled>&laquo; Sebelum</button>
+                            <span id="slsPageInfo" class="mx-2">Halaman 1</span>
+                            <button class="btn btn-sm btn-outline-secondary py-0" id="slsNextBtn" onclick="slsPageChange(1)" disabled>Berikut &raquo;</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tabNonSls" role="tabpanel">
+                    <div class="p-2 border-bottom bg-light d-flex gap-2 align-items-center flex-wrap">
+                        <input type="text" id="nonslsSearchInput" class="form-control form-control-sm" style="width:200px" placeholder="Cari SLS/kecamatan/desa..." onkeyup="nonslsSearchTimeout()">
+                        <button class="btn btn-sm btn-se2026 py-0" onclick="loadNonSlsData()"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0 small" id="tableNonSls">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID SLS</th>
+                                    <th>Kecamatan</th>
+                                    <th>Desa</th>
+                                    <th>Nama SLS</th>
+                                    <th class="text-center">KK</th>
+                                    <th class="text-center">UTP</th>
+                                    <th class="text-center">Muatan</th>
+                                    <th class="text-center">Subsektor</th>
+                                    <th>Import</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nonslsBody">
+                                <tr><td colspan="9" class="text-center text-muted py-4">Memuat data prelist...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-2 small text-muted d-flex justify-content-between align-items-center">
+                        <span id="nonslsInfo">0 baris</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary py-0" id="nonslsPrevBtn" onclick="nonslsPageChange(-1)" disabled>&laquo; Sebelum</button>
+                            <span id="nonslsPageInfo" class="mx-2">Halaman 1</span>
+                            <button class="btn btn-sm btn-outline-secondary py-0" id="nonslsNextBtn" onclick="nonslsPageChange(1)" disabled>Berikut &raquo;</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -43,12 +173,26 @@
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
                 <label class="form-label small mb-0">Kecamatan</label>
+                <?php if (!empty($kecamatan_scope)): ?>
+                    <?php
+                    $scopeKecName = '';
+                    foreach ($kecamatan as $kk) {
+                        if (substr($kecamatan_scope, -3) === $kk['kdkec']) {
+                            $scopeKecName = $kk['nmkec'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <input type="hidden" id="filterKdkec" value="<?= htmlspecialchars(substr($kecamatan_scope, -3)) ?>">
+                    <input type="text" class="form-control form-control-sm" value="<?= htmlspecialchars($scopeKecName) ?>" readonly disabled>
+                <?php else: ?>
                 <select id="filterKdkec" class="form-select form-select-sm" onchange="onFilterChange()">
                     <option value="">Semua Kecamatan</option>
                     <?php foreach ($kecamatan as $k): ?>
                         <option value="<?= htmlspecialchars($k['kdkec']) ?>"><?= htmlspecialchars($k['nmkec']) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-0">Desa</label>
@@ -121,4 +265,12 @@
         </div>
     </div>
 </div>
+
+<script>
+var MONITORING_PER_PAGE = 10;
+var slsPage = 0;
+var nonslsPage = 0;
+var slsSearchTimer = null;
+var nonslsSearchTimer = null;
+</script>
 

@@ -27,12 +27,44 @@ final class App
         }
 
         $this->loadEnvironment();
+        $this->sendSecurityHeaders();
         $this->setErrorHandler();
         $this->setTimezone();
         $this->startSession();
         $this->setBaseUrl();
 
         $this->booted = true;
+    }
+
+    private function sendSecurityHeaders(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        $cspEnabled = filter_var(Env::get('CSP_ENABLED', true), FILTER_VALIDATE_BOOLEAN);
+        if (!$cspEnabled) {
+            return;
+        }
+
+        $csp = Env::get(
+            'CSP_DIRECTIVES',
+            "default-src 'self'; "
+            . "script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net code.jquery.com cdn.datatables.net unpkg.com cdnjs.cloudflare.com; "
+            . "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdn.datatables.net unpkg.com cdnjs.cloudflare.com fonts.googleapis.com; "
+            . "img-src 'self' data: blob: https:; "
+            . "font-src 'self' data: cdnjs.cloudflare.com fonts.gstatic.com; "
+            . "connect-src 'self'; "
+            . "frame-ancestors 'self'; "
+            . "form-action 'self'; "
+            . "base-uri 'self'"
+        );
+
+        header('Content-Security-Policy: ' . $csp);
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+        header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
     }
 
     private function loadEnvironment(): void

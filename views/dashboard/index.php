@@ -3,11 +3,16 @@
     <small class="text-muted"><?= date('d F Y H:i') ?> WIB</small>
 </div>
 
+<div class="section-label-jember mb-3">
+    <i class="fas fa-city"></i> Data Kabupaten Jember
+    <span class="badge badge-jember ms-1">SIPW Import</span>
+</div>
+
 <div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-primary fs-3 glass-icon"><i class="fas fa-map"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-map"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Kecamatan</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_kecamatan']) ?></span>
@@ -16,9 +21,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-info fs-3 glass-icon"><i class="fas fa-location-dot"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-location-dot"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Desa</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_desa']) ?></span>
@@ -27,9 +32,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-secondary fs-3 glass-icon"><i class="fas fa-database"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-database"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total SLS</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_sls']) ?></span>
@@ -38,9 +43,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-success fs-3 glass-icon"><i class="fas fa-users"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-users"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total KK</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_kk']) ?></span>
@@ -49,9 +54,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-warning fs-3 glass-icon"><i class="fas fa-store"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-store"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total Usaha</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_usaha']) ?></span>
@@ -60,9 +65,9 @@
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="card glass-card h-100 border-0">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-                <div class="flex-shrink-0 text-danger fs-3 glass-icon"><i class="fas fa-weight"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3 glass-icon"><i class="fas fa-weight"></i></div>
                 <div class="min-w-0">
                     <small class="text-muted d-block text-truncate">Total Muatan</small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_muatan']) ?></span>
@@ -74,33 +79,33 @@
 
 <div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card glass-card h-100 border-0 border-start border-success border-3">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body py-3 d-flex align-items-center gap-3">
-                <div class="flex-shrink-0 text-success fs-3"><i class="fas fa-user-check"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3"><i class="fas fa-user-check"></i></div>
                 <div>
-                    <small class="text-muted d-block">Pencacah (PCL)</small>
+                    <small class="text-muted d-block">Pencacah (PCL) <span class="badge badge-jember" style="font-size:8px">Jember</span></small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_pencacah']) ?></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card glass-card h-100 border-0 border-start border-warning border-3">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body py-3 d-flex align-items-center gap-3">
-                <div class="flex-shrink-0 text-warning fs-3"><i class="fas fa-user-tie"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3"><i class="fas fa-user-tie"></i></div>
                 <div>
-                    <small class="text-muted d-block">Pengawas (PML)</small>
+                    <small class="text-muted d-block">Pengawas (PML) <span class="badge badge-jember" style="font-size:8px">Jember</span></small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_pengawas']) ?></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-6 col-md-4 col-xl-4">
-        <div class="card glass-card h-100 border-0 border-start border-info border-3">
+        <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body py-3 d-flex align-items-center gap-3">
-                <div class="flex-shrink-0 text-info fs-3"><i class="fas fa-people-group"></i></div>
+                <div class="flex-shrink-0 text-jember fs-3"><i class="fas fa-people-group"></i></div>
                 <div>
-                    <small class="text-muted d-block">Task Force</small>
+                    <small class="text-muted d-block">Task Force <span class="badge badge-jember" style="font-size:8px">Jember</span></small>
                     <span class="fw-bold fs-4"><?= number_format($stats['total_task_force']) ?></span>
                 </div>
             </div>
@@ -109,10 +114,15 @@
 </div>
 
 <?php if ($prelist_imported && !empty($prelist_kpi)): ?>
-<div class="card border-0 shadow-sm mb-4 border-start border-primary border-3">
+<div class="section-label-jatim mb-3">
+    <i class="fas fa-globe"></i> Data Provinsi Jawa Timur
+    <span class="badge badge-jatim ms-1">Prelist SE2026</span>
+</div>
+
+<div class="card border-0 shadow-sm mb-4 card-jatim">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-        <small class="fw-semibold"><i class="fas fa-clipboard-list me-1 text-primary"></i>Prelist SE2026 Jawa Timur</small>
-        <span class="badge bg-primary rounded-pill"><?= number_format($prelist_kpi['total_sls']) ?> SLS</span>
+        <small class="fw-semibold"><i class="fas fa-clipboard-list me-1 text-se2026"></i>Prelist SE2026 — <?= number_format($prelist_kpi['total_sls']) ?> SLS</small>
+        <span class="badge badge-jatim rounded-pill">38 Kab/Kota</span>
     </div>
     <div class="card-body py-2">
         <div class="row g-2">
@@ -149,7 +159,7 @@
             </div>
             <div class="col-4 col-md-2">
                 <small class="text-muted d-block">UMK</small>
-                <span class="fw-bold small text-primary"><?= number_format($prelist_kpi['total_umk']) ?></span>
+                <span class="fw-bold small text-se2026"><?= number_format($prelist_kpi['total_umk']) ?></span>
             </div>
             <div class="col-4 col-md-2">
                 <small class="text-muted d-block">PPL</small>
@@ -165,9 +175,10 @@
 
 <div class="row g-3 mb-4">
     <div class="col-lg-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-primary"></i>Perbandingan SE2016 vs SE2026 per Kab/Kota</small>
+        <div class="card border-0 shadow-sm h-100 card-jatim">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-se2026"></i>Perbandingan SE2016 vs SE2026 per Kab/Kota</small>
+                <span class="badge badge-jatim" style="font-size:8px">Prov. Jawa Timur</span>
             </div>
             <div class="card-body">
                 <canvas id="chartPrelistPerbandingan" height="320"></canvas>
@@ -175,9 +186,10 @@
         </div>
     </div>
     <div class="col-lg-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-success"></i>Komposisi Usaha SE2026</small>
+        <div class="card border-0 shadow-sm h-100 card-jatim">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-se2026"></i>Komposisi Usaha SE2026</small>
+                <span class="badge badge-jatim" style="font-size:8px">Prov. Jawa Timur</span>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
                 <canvas id="chartPrelistKomposisi" height="260"></canvas>
@@ -196,9 +208,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 <?php if ($prelist_imported && !empty($prelist_anomali_summary)): ?>
 <div class="row g-3 mb-4">
     <div class="col-12">
-        <div class="card border-0 shadow-sm border-start border-danger border-3">
+        <div class="card border-0 shadow-sm border-start border-danger border-3 card-jember">
             <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
                 <small class="fw-semibold"><i class="fas fa-exclamation-triangle me-1 text-danger"></i>Quality Gates — Indikator Anomali Data</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
                 <span class="badge bg-<?= $totalAnomali > 0 ? 'danger' : 'success' ?> rounded-pill">
                     <?= $totalAnomali ?> anomali
                 </span>
@@ -275,9 +288,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 
 <div class="row g-3 mb-4">
     <div class="col-lg-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-column me-1 text-primary"></i>Muatan per Kecamatan</small>
+        <div class="card border-0 shadow-sm h-100 card-jember">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-column me-1 text-jember"></i>Muatan per Kecamatan</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
             </div>
             <div class="card-body">
                 <canvas id="chartMuatan" height="280"></canvas>
@@ -285,9 +299,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
         </div>
     </div>
     <div class="col-lg-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-success"></i>Klasifikasi Wilayah</small>
+        <div class="card border-0 shadow-sm h-100 card-jember">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-jember"></i>Klasifikasi Wilayah</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
                 <canvas id="chartKlasifikasi" height="260"></canvas>
@@ -298,9 +313,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 
 <div class="row g-3 mb-4">
     <div class="col-lg-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-info"></i>Beban Pencacah</small>
+        <div class="card border-0 shadow-sm h-100 card-jember">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-pie me-1 text-jember"></i>Beban Pencacah</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
             </div>
             <div class="card-body">
                 <canvas id="chartBebanPencacah" height="220"></canvas>
@@ -308,9 +324,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
         </div>
     </div>
     <div class="col-lg-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-warning"></i>Distribusi Muatan Bangunan</small>
+        <div class="card border-0 shadow-sm h-100 card-jember">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-jember"></i>Distribusi Muatan Bangunan</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
             </div>
             <div class="card-body">
                 <canvas id="chartBangunan" height="220"></canvas>
@@ -321,9 +338,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 
 <div class="row g-3 mb-4">
     <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-2">
-                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-info"></i>Progress Wilayah</small>
+        <div class="card border-0 shadow-sm card-jember">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-chart-bar me-1 text-jember"></i>Progress Wilayah</small>
+                <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
             </div>
             <div class="card-body">
                 <canvas id="chartProgress" height="300"></canvas>
@@ -334,8 +352,8 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-        <small class="fw-semibold"><i class="fas fa-table me-1 text-secondary"></i>Progress per Kecamatan</small>
-        <small class="text-muted"><?= count($progress_wilayah) ?> kecamatan</small>
+        <small class="fw-semibold"><i class="fas fa-table me-1 text-jember"></i>Progress per Kecamatan</small>
+        <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
     </div>
     <div class="card-body py-2 px-3">
         <form method="GET" action="" class="row g-2 align-items-end">
@@ -353,7 +371,7 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
+                <button type="submit" class="btn btn-sm btn-se2026"><i class="fas fa-search"></i></button>
                 <?php if (!empty($kdkec_filter)): ?>
                     <a href="?page=dashboard" class="btn btn-sm btn-outline-secondary">Reset</a>
                 <?php endif; ?>
@@ -363,10 +381,45 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 </div>
 
 <?php if ($perbandingan !== null): ?>
-<div class="card border-0 shadow-sm mb-3 border-start border-<?= $perbandingan['selisih'] === 0 ? 'success' : 'danger' ?> border-3">
-    <div class="card-header bg-white py-2">
-        <small class="fw-semibold"><i class="fas fa-check-double me-1 text-secondary"></i>Perbandingan Data Kecamatan: <?= htmlspecialchars($perbandingan['nmkec']) ?></small>
+<div class="card border-0 shadow-sm mb-3 card-jember">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <small class="fw-semibold"><i class="fas fa-check-double me-1 text-jember"></i>Perbandingan Data: <?= htmlspecialchars($perbandingan['nmkec']) ?></small>
+        <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
     </div>
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body text-center py-3">
+                        <small class="text-muted d-block">Referensi (master_sls)</small>
+                        <span class="fw-bold fs-4"><?= number_format($perbandingan['master_count']) ?></span>
+                        <small class="text-muted d-block">SLS</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body text-center py-3">
+                        <small class="text-muted d-block">Database (sipw_import)</small>
+                        <span class="fw-bold fs-4"><?= number_format($perbandingan['sipw_count']) ?></span>
+                        <small class="text-muted d-block">SLS</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body text-center py-3">
+                        <small class="text-muted d-block">Selisih</small>
+                        <span class="fw-bold fs-4 text-<?= $perbandingan['selisih'] === 0 ? 'success' : 'danger' ?>">
+                            <?= $perbandingan['selisih'] >= 0 ? '+' : '' ?><?= number_format($perbandingan['selisih']) ?>
+                        </span>
+                        <small class="text-muted d-block">SLS</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <div class="card-body">
+        <div class="mb-2"><span class="fw-semibold">Kecamatan:</span> <?= htmlspecialchars($perbandingan['nmkec']) ?></div>
     <div class="card-body">
         <div class="row g-3 mb-3">
             <div class="col-md-4">
@@ -445,19 +498,19 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 </div>
 <?php endif; ?>
 
-<div class="card border-0 shadow-sm mb-3 border-start border-info border-3">
+<div class="card border-0 shadow-sm mb-3 card-jember">
     <div class="card-body py-2 px-3">
         <div class="d-flex align-items-center gap-2 small">
-            <i class="fas fa-info-circle text-info"></i>
-            <span>Data master resmi Semester 1 2025: <strong>16.772 SLS</strong> dari <strong>248 desa</strong> di <strong>31 kecamatan</strong>. Sumber: <code>msubsls_25_2_3509.xlsx</code> dan <code>mfd_25_2_3509.xlsx</code>.</span>
+            <i class="fas fa-info-circle text-jember"></i>
+            <span>Data master resmi Semester 1 2025: <strong>16.772 SLS</strong> dari <strong>248 desa</strong> di <strong>31 kecamatan</strong>. Sumber: <code>msubsls_25_2_3509.xlsx</code> dan <code>mfd_25_2_3509.xlsx</code>. <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span></span>
         </div>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm card-jember">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-        <small class="fw-semibold"><i class="fas fa-table me-1 text-secondary"></i>Progress per Kecamatan</small>
-        <small class="text-muted"><?= count($progress_wilayah) ?> kecamatan</small>
+        <small class="fw-semibold"><i class="fas fa-table me-1 text-jember"></i>Progress per Kecamatan</small>
+        <span class="badge badge-jember" style="font-size:8px">Kab. Jember</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -474,8 +527,7 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
                 </thead>
                 <tbody>
                     <?php foreach ($progress_wilayah as $row): ?>
-                        <?php $progress = $row['total_sls'] > 0
-                            ? round(($row['selesai'] / $row['total_sls']) * 100, 1) : 0; ?>
+                        <?php $progress = $row['progress'] ?? 0; ?>
                         <tr>
                             <td><?= htmlspecialchars($row['label']) ?></td>
                             <td class="text-center"><?= number_format($row['total_sls']) ?></td>
@@ -504,10 +556,10 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
 <?php if ($prelist_imported && !empty($prelist_map_kec)): ?>
 <div class="row g-3 mb-4">
     <div class="col-12">
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm card-jember">
             <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-                <small class="fw-semibold"><i class="fas fa-map me-1 text-danger"></i>Peta Sebaran Muatan per Kecamatan</small>
-                <small class="text-muted">Bubble size = total muatan RS</small>
+                <small class="fw-semibold"><i class="fas fa-map me-1 text-jember"></i>Peta Sebaran Muatan per Kecamatan</small>
+                <span class="d-flex align-items-center gap-2"><span class="badge badge-jember" style="font-size:8px">Kab. Jember</span><small class="text-muted">Bubble size = total muatan RS</small></span>
             </div>
             <div class="card-body p-0">
                 <div id="mapPrelist" style="height:420px; border-radius:0 0 var(--bs-card-border-radius) var(--bs-card-border-radius);"></div>
@@ -520,6 +572,20 @@ var mapKecamatan = <?= json_encode($prelist_map_kec, JSON_UNESCAPED_UNICODE) ?>;
 </script>
 <?php endif; ?>
 
+<!-- ─── Legenda Wilayah ─────────────────────────────────────────── -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-3 small">
+            <span class="fw-semibold me-2"><i class="fas fa-info-circle me-1"></i>Legenda Wilayah:</span>
+            <span><span class="badge badge-jatim me-1">&nbsp;</span> Provinsi Jawa Timur</span>
+            <span><span class="badge badge-jember me-1">&nbsp;</span> Kabupaten Jember</span>
+            <span><span class="badge badge-lain me-1">&nbsp;</span> Kabupaten Lain</span>
+            <span class="text-muted ms-3"><i class="far fa-circle text-jember me-1"></i>Border biru = data Jember</span>
+            <span class="text-muted"><i class="far fa-circle text-se2026 me-1"></i>Border oranye = data Jatim</span>
+        </div>
+    </div>
+</div>
+
 <script>
 var chartData = {
     muatan: {
@@ -527,8 +593,8 @@ var chartData = {
         datasets: [{
             label: 'Muatan',
             data: <?= json_encode(array_map('intval', array_column($muatan_per_kec, 'total_muatan'))) ?>,
-            backgroundColor: 'rgba(13, 110, 253, 0.7)',
-            borderColor: 'rgba(13, 110, 253, 1)',
+            backgroundColor: 'rgba(244, 123, 32, 0.7)',
+            borderColor: 'rgba(244, 123, 32, 1)',
             borderWidth: 1,
             borderRadius: 4,
         }]
@@ -539,7 +605,7 @@ var chartData = {
             <?= (int) ($stats['total_sls_urban'] ?? 0) ?>,
             <?= (int) ($stats['total_sls_rural'] ?? 0) ?>
         ],
-        colors: ['rgba(13, 110, 253, 0.8)', 'rgba(25, 135, 84, 0.8)'],
+        colors: ['rgba(244, 123, 32, 0.8)', 'rgba(25, 135, 84, 0.8)'],
     },
     bangunan: {
         labels: ['BSTT', 'BSBTT', 'BSTTK', 'BKU'],
@@ -557,7 +623,7 @@ var chartData = {
             data: <?= json_encode(array_map('intval', array_column($beban_pencacah, 'total_assign'))) ?>,
             backgroundColor: [
                 'rgba(25, 135, 84, 0.8)',
-                'rgba(13, 110, 253, 0.8)',
+                'rgba(244, 123, 32, 0.8)',
                 'rgba(255, 193, 7, 0.8)',
                 'rgba(111, 66, 193, 0.8)',
                 'rgba(220, 53, 69, 0.8)',
@@ -584,7 +650,7 @@ var chartData = {
                 <?= (int) ($prelist_kpi['total_um'] ?? 0) ?>,
                 <?= (int) ($prelist_kpi['total_umk'] ?? 0) ?>,
             ],
-            colors: ['#dc3545', '#ffc107', '#0d6efd'],
+            colors: ['#dc3545', '#ffc107', '#F47B20'],
         },
     }
 <?php else: ?>

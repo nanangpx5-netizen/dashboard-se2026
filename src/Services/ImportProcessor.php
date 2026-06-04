@@ -487,8 +487,15 @@ class ImportProcessor
     /**
      * Get daftar log import terbaru
      */
-    public function getImportHistory(int $limit = 20): array
+    public function getImportHistory(int $page = 1, int $perPage = 10): array
     {
+        $page    = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset  = ($page - 1) * $perPage;
+
+        $countStmt = $this->pdo->query("SELECT COUNT(*) FROM dash_import_log");
+        $total = (int) $countStmt->fetchColumn();
+
         $stmt = $this->pdo->prepare("
             SELECT
                 l.*,
@@ -496,10 +503,16 @@ class ImportProcessor
             FROM dash_import_log l
             LEFT JOIN users u ON u.id = l.user_id
             ORDER BY l.created_at DESC
-            LIMIT ?
+            LIMIT ? OFFSET ?
         ");
-        $stmt->execute([$limit]);
-        return $stmt->fetchAll();
+        $stmt->execute([$perPage, $offset]);
+        return [
+            'rows'        => $stmt->fetchAll(),
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $perPage,
+            'total_pages' => (int) max(1, ceil($total / $perPage)),
+        ];
     }
 
     /**

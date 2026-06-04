@@ -15,7 +15,7 @@ class PrelistModel
 
     public function getKpiJatim(): array
     {
-        $row = $this->pdo->query("
+        $kab = $this->pdo->query("
             SELECT
                 COALESCE(SUM(se2016),0)      AS total_se2016,
                 COALESCE(SUM(jml_kk),0)      AS total_kk,
@@ -25,13 +25,16 @@ class PrelistModel
                 COALESCE(SUM(um),0)          AS total_um,
                 COALESCE(SUM(umk),0)         AS total_umk,
                 COALESCE(SUM(ub+um+umk),0)   AS total_usaha,
-                COALESCE(SUM(n_sls),0)       AS total_sls,
                 COALESCE(SUM(ppl),0)         AS total_ppl,
                 COALESCE(SUM(pml),0)         AS total_pml
             FROM prelist_kabkota
-        ")->fetch();
+        ")->fetch() ?: [];
 
-        return $row ?: [];
+        $sls = $this->pdo->query("SELECT COUNT(*) AS cnt FROM prelist_sls")->fetch();
+
+        $kab['total_sls'] = (int) ($sls['cnt'] ?? 0);
+
+        return $kab;
     }
 
     public function getKomposisiUsahaPerKab(): array

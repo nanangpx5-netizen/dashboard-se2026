@@ -2,6 +2,18 @@
 
 /**
  * Role Constants — harus sinkron dengan ENUM users.role di database
+ *
+ * Status per Juni 2026:
+ *   - admin      : 4 active (admin, pegawai01, pegawai02, dll)
+ *   - operator   : 0 users (role di-deklarasikan tapi belum ada user)
+ *                  → permission check masih include operator untuk backward compat
+ *                  → jika di-remove: hapus dari semua ROLE_* arrays + 23 referensi
+ *                  → rekomendasi R3.4: biarkan sampai ada kebutuhan eksplisit
+ *   - pegawai    : 1 user (pegawai3509, placeholder) + 5 baru (Jun 2026) via R3.1
+ *   - mitra      : 2,158 active (99,95% tanpa kecamatan_bertugas, R1.1 backfill)
+ *   - pml/pcl/task_force : 1 each (test accounts, R3.3 onboarding)
+ *   - panitia    : 1 test account
+ *   - pj         : 0 users (legacy role)
  */
 
 defined('ROLE_ADMIN')      || define('ROLE_ADMIN',      'admin');
@@ -65,12 +77,15 @@ const PAGE_ACCESS = [
     'dashboard' => [
         ''           => DASHBOARD_ROLES,
         'import'     => [ROLE_ADMIN, ROLE_OPERATOR],
-        'assignment' => [ROLE_ADMIN, ROLE_OPERATOR],
+        'assignment' => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
         'monitoring' => DASHBOARD_ROLES,
         'workload'   => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
-        'wilayah'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI, ROLE_TASK_FORCE],
+        'wilayah'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_TASK_FORCE],
         'petugas'    => [ROLE_ADMIN],
+        'petugas-lapangan'  => [ROLE_ADMIN],
         'audit'      => [ROLE_ADMIN, ROLE_OPERATOR],
-        'report'     => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI],
+        'report'     => [ROLE_ADMIN, ROLE_OPERATOR],
+        'insight'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_TASK_FORCE, ROLE_PML, ROLE_PCL],
+        'pegawai-activity' => [ROLE_ADMIN, ROLE_OPERATOR],
     ],
 ];

@@ -6,12 +6,23 @@ node_modules/
 Thumbs.db
 cookies.txt
 storage/import/*.xlsx
+storage/import/sharedstrings*/
 storage/export/*.xlsx
 storage/backup/*.sql
 storage/temp/
 storage/cache/
+storage/framework/
+storage/dashboard_result.html
+storage/tmp/
+data/sipw/
+data/export_sipw.xlsx
+data/PRELIST SE2026.xlsx
+data/mfd/
+data/3C2AB340
+*.pyc
+__pycache__/
 .idea/
 .vscode/
 *.sql
-data/sipw/
-data/export_sipw.xlsx
+!database/patch_*.sql
+!scripts/*.sql

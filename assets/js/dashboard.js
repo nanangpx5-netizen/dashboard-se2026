@@ -66,7 +66,7 @@ $(document).ready(function () {
                     label: 'Unit',
                     data: chartData.bangunan.data,
                     backgroundColor: [
-                        'rgba(13, 110, 253, 0.7)',
+'rgba(244, 123, 32, 0.7)',
                         'rgba(255, 193, 7, 0.7)',
                         'rgba(111, 66, 193, 0.7)',
                         'rgba(220, 53, 69, 0.7)',
@@ -134,7 +134,7 @@ $(document).ready(function () {
                         {
                             label: 'SE2026 (Prelist)',
                             data: chartData.prelist.perbandingan.se2026,
-                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            backgroundColor: 'rgba(244, 123, 32, 0.7)',
                             borderRadius: 3,
                         },
                     ],

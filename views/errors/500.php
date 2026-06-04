@@ -10,7 +10,7 @@
     <div class="text-center">
         <h1 class="display-1 text-danger fw-bold">500</h1>
         <p class="fs-5 text-muted">Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.</p>
-        <a href="?page=dashboard" class="btn btn-primary">Kembali ke Dashboard</a>
+        <a href="?page=dashboard" class="btn btn-se2026">Kembali ke Dashboard</a>
     </div>
 </body>
 </html>
