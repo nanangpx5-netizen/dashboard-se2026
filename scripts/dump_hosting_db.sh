@@ -31,7 +31,19 @@ done
 # Load DB config from .env.production (web root)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_PATH=""
-for try in "$SCRIPT_DIR/../.env.production" "$SCRIPT_DIR/../../.env.production" "$SCRIPT_DIR/../.env"; do
+
+# Cari .env.production di beberapa kemungkinan lokasi
+# 1. Di repo root (direktori di atas scripts/)
+# 2. Di web root dashboard-se2026.bpsjember.my.id
+# 3. Di ~/public_html atau direktori home
+# 4. Fallback ke .env biasa
+for try in \
+    "$SCRIPT_DIR/../.env.production" \
+    "$SCRIPT_DIR/../.env" \
+    "/home/bpsjembe/dashboard-se2026.bpsjember.my.id/.env.production" \
+    "/home/bpsjembe/dashboard-se2026.bpsjember.my.id/.env" \
+    "$SCRIPT_DIR/../../.env.production" \
+    "$HOME/.env.production"; do
     if [ -f "$try" ]; then
         ENV_PATH="$try"
         break
