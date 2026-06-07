@@ -57,10 +57,23 @@ if [ -z "$ENV_PATH" ]; then
 fi
 
 echo "Menggunakan env: $ENV_PATH"
-eval "$(grep -E '^DB_' "$ENV_PATH" | sed 's/ //g')"
 
+# Baca .env - export semua var
+while IFS='=' read -r key val; do
+    if [[ $key =~ ^[A-Z_]+$ ]] && [ -n "$val" ]; then
+        # Buang kutip dan spasi
+        val="${val%"${val##*[![:space:]]}"}"   # trim trailing space
+        val="${val#\"}"; val="${val%\"}"        # buang kutip ganda
+        val="${val#\'}"; val="${val%\'}"       # buang kutip tunggal
+        export "$key=$val"
+    fi
+done < "$ENV_PATH"
+
+# Map variabel .env ke nama script
 DB_NAME="${DB_DATABASE:-$DB_NAME}"
+DB_NAME="${DB_NAME:-bpsjembe_se2026_jember}"
 DB_USER="${DB_USERNAME:-$DB_USER}"
+DB_USER="${DB_USER:-bpsjembe}"
 DB_PASS="${DB_PASSWORD:-$DB_PASS}"
 DB_HOST="${DB_HOST:-localhost}"
 
