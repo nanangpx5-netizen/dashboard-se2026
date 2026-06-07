@@ -56,7 +56,7 @@
     <div class="col-lg-5">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-                <small class="fw-semibold"><i class="fas fa-tree me-1 text-se2026"></i>Desa — Rincian per Kecamatan</small>
+                <small class="fw-semibold" id="desaSummaryTitle"><i class="fas fa-tree me-1 text-se2026"></i>Desa — Rincian per Kecamatan</small>
                 <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadDesaSummary()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
             </div>
             <div class="card-body">
@@ -69,7 +69,19 @@
                     </select>
                 </div>
                 <div id="desaSummaryContainer" class="small" style="max-height:320px; overflow-y:auto;">
-                    <div class="text-center text-muted py-4">Pilih kecamatan untuk melihat rincian desa</div>
+                    <table class="table table-sm table-hover mb-0" style="font-size:11px">
+                        <thead class="bg-light sticky-top">
+                            <tr>
+                                <th>Desa</th>
+                                <th class="text-center">Total</th>
+                                <th class="text-center">Assign</th>
+                                <th class="text-center">Selesai</th>
+                                <th>Progres</th>
+                                <th class="text-center">St</th>
+                            </tr>
+                        </thead>
+                        <tbody id="desaSummaryBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -99,25 +111,21 @@
                         <input type="text" id="slsSearchInput" class="form-control form-control-sm" style="width:200px" placeholder="Cari SLS/kecamatan/desa..." onkeyup="slsSearchTimeout()">
                         <button class="btn btn-sm btn-se2026 py-0" onclick="loadSlsData()"><i class="fas fa-search"></i></button>
                     </div>
-                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
-                        <table class="table table-sm table-hover mb-0 small" id="tableSlsAssigned">
-                            <thead class="table-light">
+                    <div class="table-responsive" style="max-height:400px">
+                        <table class="table table-sm table-hover mb-0" style="font-size:11px">
+                            <thead class="bg-light sticky-top">
                                 <tr>
-                                    <th>Kecamatan</th>
-                                    <th>Desa</th>
-                                    <th>SLS</th>
+                                    <th>Wilayah</th>
+                                    <th>Identitas SLS</th>
                                     <th class="text-center">KK</th>
+                                    <th class="text-center">Usaha</th>
                                     <th class="text-center">Muatan</th>
-                                    <th>PCL</th>
-                                    <th>PML</th>
-                                    <th>TF</th>
+                                    <th>Petugas</th>
                                     <th class="text-center">Status</th>
                                     <th>Assign Terakhir</th>
                                 </tr>
                             </thead>
-                            <tbody id="slsAssignedBody">
-                                <tr><td colspan="10" class="text-center text-muted py-4">Belum ada data SLS yang di-assign</td></tr>
-                            </tbody>
+                            <tbody id="slsBody"></tbody>
                         </table>
                     </div>
                     <div class="p-2 small text-muted d-flex justify-content-between align-items-center">
@@ -131,27 +139,24 @@
                 </div>
                 <div class="tab-pane fade" id="tabNonSls" role="tabpanel">
                     <div class="p-2 border-bottom bg-light d-flex gap-2 align-items-center flex-wrap">
-                        <input type="text" id="nonslsSearchInput" class="form-control form-control-sm" style="width:200px" placeholder="Cari SLS/kecamatan/desa..." onkeyup="nonslsSearchTimeout()">
-                        <button class="btn btn-sm btn-se2026 py-0" onclick="loadNonSlsData()"><i class="fas fa-search"></i></button>
+                        <input type="text" id="nonslsSearchInput" class="form-control form-control-sm" style="width:200px" placeholder="Cari Non-SLS/kecamatan/desa..." onkeyup="nonslsSearchTimeout()">
+                        <button class="btn btn-sm btn-info py-0 text-white" onclick="loadNonSlsData()"><i class="fas fa-search"></i></button>
                     </div>
-                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
-                        <table class="table table-sm table-hover mb-0 small" id="tableNonSls">
-                            <thead class="table-light">
+                    <div class="table-responsive" style="max-height:400px">
+                        <table class="table table-sm table-hover mb-0" style="font-size:11px">
+                            <thead class="bg-light sticky-top">
                                 <tr>
-                                    <th>ID SLS</th>
-                                    <th>Kecamatan</th>
-                                    <th>Desa</th>
-                                    <th>Nama SLS</th>
+                                    <th>Wilayah</th>
+                                    <th>Identitas Non-SLS</th>
                                     <th class="text-center">KK</th>
-                                    <th class="text-center">UTP</th>
+                                    <th class="text-center">Usaha</th>
                                     <th class="text-center">Muatan</th>
-                                    <th class="text-center">Subsektor</th>
-                                    <th>Import</th>
+                                    <th>Petugas</th>
+                                    <th class="text-center">Status</th>
+                                    <th>Assign Terakhir</th>
                                 </tr>
                             </thead>
-                            <tbody id="nonslsBody">
-                                <tr><td colspan="9" class="text-center text-muted py-4">Memuat data prelist...</td></tr>
-                            </tbody>
+                            <tbody id="nonslsBody"></tbody>
                         </table>
                     </div>
                     <div class="p-2 small text-muted d-flex justify-content-between align-items-center">

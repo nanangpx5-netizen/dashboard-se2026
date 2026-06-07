@@ -315,10 +315,10 @@ class MonitoringModel
     public function getKecamatanSummary(array $filters = []): array
     {
         $params = [];
-        $where = '';
+        $where = "WHERE si.kdkab = '09'";
 
         if (!empty($filters['kdkec'])) {
-            $where = 'WHERE si.kdkec = ?';
+            $where .= ' AND si.kdkec = ?';
             $params[] = $filters['kdkec'];
         }
 
@@ -330,7 +330,8 @@ class MonitoringModel
                 COUNT(DISTINCT sa.id)                          AS assigned_sls,
                 COALESCE(SUM(CASE WHEN sa.status = 'proses'  THEN 1 ELSE 0 END), 0) AS proses_sls,
                 COALESCE(SUM(CASE WHEN sa.status = 'selesai' THEN 1 ELSE 0 END), 0) AS selesai_sls,
-                MAX(sa.updated_at)                             AS last_update
+                MAX(sa.updated_at)                             AS last_update,
+                CASE WHEN COUNT(DISTINCT sa.id) > 0 THEN 1 ELSE 0 END AS is_active
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
             {$where}
@@ -348,59 +349,60 @@ class MonitoringModel
      */
     public function getDesaSummary(string $kdkec = ''): array
     {
-        if ($kdkec === '') return [];
+        $params = [];
+        $where = "WHERE si.kdkab = '09'";
+        if ($kdkec !== '') {
+            $where .= " AND si.kdkec = ?";
+            $params[] = $kdkec;
+        }
 
         $stmt = $this->pdo->prepare("
             SELECT
+                si.kdkec,
+                si.nmkec,
                 si.kddesa,
                 si.nmdesa,
                 COUNT(DISTINCT si.id)                          AS total_sls,
                 COUNT(DISTINCT sa.id)                          AS assigned_sls,
                 COALESCE(SUM(CASE WHEN sa.status = 'selesai' THEN 1 ELSE 0 END), 0) AS selesai_sls,
                 COUNT(DISTINCT CASE WHEN sa.id IS NULL THEN si.id END)               AS unassigned_sls,
-                MAX(sa.updated_at)                             AS last_update
+                MAX(sa.updated_at)                             AS last_update,
+                CASE WHEN COUNT(DISTINCT sa.id) = COUNT(DISTINCT si.id) THEN 1 ELSE 0 END AS is_complete
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
-            WHERE si.kdkec = ?
-            GROUP BY si.kddesa, si.nmdesa
-            ORDER BY si.nmdesa
+            {$where}
+            GROUP BY si.kdkec, si.nmkec, si.kddesa, si.nmdesa
+            ORDER BY si.nmkec, si.nmdesa
         ");
-        $stmt->execute([$kdkec]);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
     /**
-     * Paginated list of assigned SLS (from sipw_import + sipw_assignment)
+     * Paginated list of SLS units (RT/RW/DUSUN)
      */
-    public function getSlsAssigned(array $filters, int $start = 0, int $length = 25): array
+    public function getSlsData(array $filters, int $start = 0, int $length = 25): array
     {
         $params = [];
-        $where = 'WHERE sa.id IS NOT NULL';
+        $where = "WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND si.kdkab = '09'";
         $where .= $this->buildSlsWhere($filters, $params);
 
         $sql = "
             SELECT
-                si.id,
-                si.kdkec,
-                si.nmkec,
-                si.kddesa,
-                si.nmdesa,
-                si.nmsls,
-                si.kk,
-                si.usaha,
-                si.muatan,
+                si.id, si.kdkec, si.nmkec, si.kddesa, si.nmdesa, si.nmsls,
+                si.kk, si.usaha, si.muatan, si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat,
                 COALESCE(pc.username, '-')     AS pencacah,
                 COALESCE(pw.username, '-')     AS pengawas,
                 COALESCE(tf.username, '-')     AS task_force,
-                sa.status,
+                COALESCE(sa.status, 'belum')   AS status,
                 sa.updated_at                  AS tgl_assign
             FROM sipw_import si
-            JOIN sipw_assignment sa ON sa.sipw_id = si.id
+            LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
             LEFT JOIN users pw ON pw.id = sa.pengawas_id
             LEFT JOIN users tf ON tf.id = sa.task_force_id
             {$where}
-            ORDER BY sa.updated_at DESC, si.nmkec, si.nmdesa, si.nmsls
+            ORDER BY si.nmkec, si.nmdesa, si.nmsls
             LIMIT {$length} OFFSET {$start}
         ";
 
@@ -410,24 +412,63 @@ class MonitoringModel
     }
 
     /**
-     * Count of assigned SLS
+     * Count of SLS units
      */
-    public function countSlsAssigned(array $filters): int
+    public function countSlsData(array $filters): int
     {
         $params = [];
-        $where = 'WHERE sa.id IS NOT NULL';
+        $where = "WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND si.kdkab = '09'";
+        $where .= $this->buildSlsWhere($filters, $params);
+
+        $sql = "SELECT COUNT(*) FROM sipw_import si LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id {$where}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Paginated list of Non-SLS units
+     */
+    public function getNonSlsData(array $filters, int $start = 0, int $length = 25): array
+    {
+        $params = [];
+        $where = "WHERE si.nmsls NOT REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND si.kdkab = '09'";
         $where .= $this->buildSlsWhere($filters, $params);
 
         $sql = "
-            SELECT COUNT(DISTINCT si.id)
+            SELECT
+                si.id, si.kdkec, si.nmkec, si.kddesa, si.nmdesa, si.nmsls,
+                si.kk, si.usaha, si.muatan, si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat,
+                COALESCE(pc.username, '-')     AS pencacah,
+                COALESCE(pw.username, '-')     AS pengawas,
+                COALESCE(tf.username, '-')     AS task_force,
+                COALESCE(sa.status, 'belum')   AS status,
+                sa.updated_at                  AS tgl_assign
             FROM sipw_import si
-            JOIN sipw_assignment sa ON sa.sipw_id = si.id
+            LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
             LEFT JOIN users pw ON pw.id = sa.pengawas_id
             LEFT JOIN users tf ON tf.id = sa.task_force_id
             {$where}
+            ORDER BY si.nmkec, si.nmdesa, si.nmsls
+            LIMIT {$length} OFFSET {$start}
         ";
 
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Count of Non-SLS units
+     */
+    public function countNonSlsData(array $filters): int
+    {
+        $params = [];
+        $where = "WHERE si.nmsls NOT REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND si.kdkab = '09'";
+        $where .= $this->buildSlsWhere($filters, $params);
+
+        $sql = "SELECT COUNT(*) FROM sipw_import si LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id {$where}";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();

@@ -155,7 +155,55 @@ class MonitoringController extends Controller
     }
 
     /**
-     * AJAX JSON: DataTables format untuk prelist SLS (non-SLS)
+     * AJAX JSON: DataTables format untuk SLS (RT/RW/DUSUN)
+     */
+    private function slsData(): void
+    {
+        $draw   = (int) ($_GET['draw'] ?? 0);
+        $start  = (int) ($_GET['start'] ?? 0);
+        $length = (int) ($_GET['length'] ?? 25);
+        $search = $_GET['search']['value'] ?? '';
+
+        $filters = $this->applyKecamatanScope([
+            'kdkec'  => $_GET['kdkec'] ?? '',
+            'kddesa' => $_GET['kddesa'] ?? '',
+            'search' => $search,
+        ]);
+
+        $recordsTotal    = $this->model->countSlsData($filters);
+        $recordsFiltered = $recordsTotal; // Simple implementation for now
+        $data            = $this->model->getSlsData($filters, $start, $length);
+
+        $rows = [];
+        foreach ($data as $r) {
+            $rows[] = [
+                'nmkec'      => htmlspecialchars($r['nmkec']),
+                'nmdesa'     => htmlspecialchars($r['nmdesa']),
+                'nmsls'      => htmlspecialchars($r['nmsls']),
+                'kk'         => (int) $r['kk'],
+                'usaha'      => (int) $r['usaha'],
+                'muatan'     => (int) $r['muatan'],
+                'subsektor'  => (int) $r['subsektor_st2023'],
+                'jml_kk'     => (int) $r['jml_kk'],
+                'usaha_wilker' => (int) $r['usaha_wilkerstat'],
+                'pencacah'   => htmlspecialchars($r['pencacah']),
+                'pengawas'   => htmlspecialchars($r['pengawas']),
+                'task_force' => htmlspecialchars($r['task_force']),
+                'status'     => $r['status'],
+                'tgl_assign' => $r['tgl_assign'] ?? '-',
+            ];
+        }
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $rows,
+        ]);
+    }
+
+    /**
+     * AJAX JSON: DataTables format untuk Non-SLS units
      */
     private function nonSlsData(): void
     {
@@ -164,32 +212,33 @@ class MonitoringController extends Controller
         $length = (int) ($_GET['length'] ?? 25);
         $search = $_GET['search']['value'] ?? '';
 
-        // Extract kd_kec (3-digit) from session scope (7-digit, e.g. '3509180' → '180')
-        $kdkec = '';
-        $scope = $this->getKecamatanScope();
-        if ($scope !== null && strlen($scope) === 7) {
-            $kdkec = substr($scope, -3);
-        }
+        $filters = $this->applyKecamatanScope([
+            'kdkec'  => $_GET['kdkec'] ?? '',
+            'kddesa' => $_GET['kddesa'] ?? '',
+            'search' => $search,
+        ]);
 
-        $recordsTotal    = $this->model->countPrelistSls('3509', '', $kdkec);
-        $recordsFiltered = $this->model->countPrelistSls('3509', $search, $kdkec);
-        $data            = $this->model->getPrelistSls('3509', $search, $start, $length, $kdkec);
+        $recordsTotal    = $this->model->countNonSlsData($filters);
+        $recordsFiltered = $recordsTotal;
+        $data            = $this->model->getNonSlsData($filters, $start, $length);
 
         $rows = [];
         foreach ($data as $r) {
             $rows[] = [
-                'idsls'           => htmlspecialchars($r['idsls']),
-                'kd_kec'          => htmlspecialchars($r['kd_kec']),
-                'nm_kec'          => htmlspecialchars($r['nm_kec']),
-                'nm_desa'         => htmlspecialchars($r['nm_desa']),
-                'nama_sls'        => htmlspecialchars($r['nama_sls']),
-                'jml_kk'          => (int) ($r['jml_kk'] ?? 0),
-                'utp'             => (int) ($r['utp'] ?? 0),
-                'muatan_rs'       => (int) ($r['muatan_rs'] ?? 0),
-                'subsektor'       => (int) ($r['subsektor'] ?? 0),
-                'usaha_se2016'    => (int) ($r['usaha_se2016'] ?? 0),
-                'usaha_wilkerstat'=> (int) ($r['usaha_wilkerstat'] ?? 0),
-                'imported_at'     => $r['imported_at'] ?? '-',
+                'nmkec'      => htmlspecialchars($r['nmkec']),
+                'nmdesa'     => htmlspecialchars($r['nmdesa']),
+                'nmsls'      => htmlspecialchars($r['nmsls']),
+                'kk'         => (int) $r['kk'],
+                'usaha'      => (int) $r['usaha'],
+                'muatan'     => (int) $r['muatan'],
+                'subsektor'  => (int) $r['subsektor_st2023'],
+                'jml_kk'     => (int) $r['jml_kk'],
+                'usaha_wilker' => (int) $r['usaha_wilkerstat'],
+                'pencacah'   => htmlspecialchars($r['pencacah']),
+                'pengawas'   => htmlspecialchars($r['pengawas']),
+                'task_force' => htmlspecialchars($r['task_force']),
+                'status'     => $r['status'],
+                'tgl_assign' => $r['tgl_assign'] ?? '-',
             ];
         }
 

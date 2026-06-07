@@ -43,7 +43,7 @@ class PetugasController extends Controller
         }
 
         $roleFilter = $_GET['role'] ?? '';
-        $allRoles = ['admin', 'operator', 'pegawai', 'mitra', 'pml', 'pcl', 'task_force', 'pj', 'panitia'];
+        $allRoles = [ROLE_ADMIN, ROLE_OPERATOR, ROLE_PEGAWAI, ROLE_MITRA, ROLE_PML, ROLE_PCL, ROLE_TASK_FORCE, 'pj', 'panitia'];
 
         $users = $this->userModel->getUsers($allRoles, $roleFilter);
         $roleCounts = $this->userModel->getRoleCounts($allRoles);

@@ -36,6 +36,11 @@ class PclPmlTfController extends Controller
             return;
         }
 
+        if ($action === 'download') {
+            $this->handleDownload();
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->showPage();
             return;
@@ -222,6 +227,57 @@ class PclPmlTfController extends Controller
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="template_import_pclpmltf.xlsx"');
+        header('Content-Length: ' . filesize($tempFile));
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        readfile($tempFile);
+        unlink($tempFile);
+        exit;
+    }
+
+    private function handleDownload(): void
+    {
+        $role = $_GET['role'] ?? '';
+        if (!in_array($role, ['pcl', 'pml'], true)) {
+            Session::flash('error', 'Role tidak valid untuk diunduh.');
+            $this->redirect('?page=dashboard&sub=petugas-lapangan');
+            return;
+        }
+
+        $users = $this->userModel->getUsers([$role], $role);
+        
+        $storagePath = dirname(__DIR__, 2) . '/storage/export';
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
+        
+        $filename = 'data_' . $role . '_' . date('Ymd_His') . '.xlsx';
+        $tempFile = $storagePath . '/' . $filename;
+        
+        $headers = ['ID', 'Nama Lengkap', 'Username', 'Email', 'Role', 'Status', 'Dibuat Pada'];
+
+        $options = new Options();
+        $options->setTempFolder($storagePath);
+        $writer = new Writer($options);
+        $writer->openToFile($tempFile);
+        $writer->addRow(Row::fromValues($headers));
+        
+        foreach ($users as $u) {
+            $writer->addRow(Row::fromValues([
+                $u['id'],
+                $u['nama_lengkap'],
+                $u['username'],
+                $u['email'],
+                strtoupper($u['role']),
+                $u['status_akun'],
+                $u['created_at']
+            ]));
+        }
+        
+        $writer->close();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Length: ' . filesize($tempFile));
         header('Cache-Control: max-age=0');
         header('Pragma: public');

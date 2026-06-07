@@ -143,11 +143,12 @@
                         <label class="form-label small">Role</label>
                         <select name="role" id="create_role" class="form-select form-select-sm" required onchange="toggleKecamatan('create')">
                             <option value="">-- Pilih Role --</option>
-                            <option value="pcl">PCL</option>
-                            <option value="pml">PML</option>
-                            <option value="task_force">Task Force</option>
-                            <option value="operator">Operator</option>
-                            <option value="pegawai">Pegawai</option>
+                            <option value="pcl"><?= ROLE_LABELS['pcl'] ?? 'PCL' ?></option>
+                            <option value="pml"><?= ROLE_LABELS['pml'] ?? 'PML' ?></option>
+                            <option value="task_force"><?= ROLE_LABELS['task_force'] ?? 'Task Force' ?></option>
+                            <option value="operator"><?= ROLE_LABELS['operator'] ?? 'Operator' ?></option>
+                            <option value="pegawai"><?= ROLE_LABELS['pegawai'] ?? 'Pegawai' ?></option>
+                            <option value="panitia">Panitia</option>
                         </select>
                     </div>
                     <div class="mb-3" id="create_kecamatan_wrap" style="display:none">

@@ -9,6 +9,42 @@
 </div>
 
 <div class="row g-2 g-md-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-4">
+        <div class="card card-jember h-100 border-0 shadow-sm">
+            <div class="card-body py-3 d-flex align-items-center gap-3">
+                <div class="flex-shrink-0 text-warning fs-3"><i class="fas fa-layer-group"></i></div>
+                <div>
+                    <small class="text-muted d-block">Subsektor ST2023</small>
+                    <span class="fw-bold fs-4"><?= number_format($stats['total_subsektor'] ?? 0) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-4">
+        <div class="card card-jember h-100 border-0 shadow-sm">
+            <div class="card-body py-3 d-flex align-items-center gap-3">
+                <div class="flex-shrink-0 text-success fs-3"><i class="fas fa-house-user"></i></div>
+                <div>
+                    <small class="text-muted d-block">Jml KK (Prelist)</small>
+                    <span class="fw-bold fs-4"><?= number_format($stats['total_jml_kk'] ?? 0) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-4">
+        <div class="card card-jember h-100 border-0 shadow-sm">
+            <div class="card-body py-3 d-flex align-items-center gap-3">
+                <div class="flex-shrink-0 text-danger fs-3"><i class="fas fa-briefcase"></i></div>
+                <div>
+                    <small class="text-muted d-block">Usaha Wilkerstat</small>
+                    <span class="fw-bold fs-4"><?= number_format($stats['total_usaha_wilker'] ?? 0) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-4 col-xl-2">
         <div class="card card-jember h-100 border-0 shadow-sm">
             <div class="card-body d-flex align-items-center gap-3 py-3">
@@ -496,6 +532,234 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
         <?php endif; ?>
     </div>
 </div>
+<?php endif; ?>
+
+<!-- ─── Petugas Integration Section ──────────────────────────────────── -->
+<?php if (!empty($petugas_stats) || !empty($assignment_summary)): ?>
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="section-label-se2026 mb-3">
+            <i class="fas fa-users-cog"></i> Manajemen Petugas & Assignment
+            <span class="badge bg-se2026 ms-1">Integrasi Data</span>
+        </div>
+    </div>
+
+    <!-- Petugas Stats Cards -->
+    <?php if (!empty($petugas_stats['all_roles'])): ?>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-users me-1 text-se2026"></i>Statistik Semua Petugas (by Role)</small>
+                <a href="?page=dashboard&sub=petugas" class="btn btn-sm btn-outline-se2026">
+                    <i class="fas fa-external-link-alt me-1"></i>Buka Halaman Petugas
+                </a>
+            </div>
+            <div class="card-body py-2">
+                <div class="row g-2">
+                    <?php foreach ($petugas_stats['all_roles'] as $pr): 
+                        $roleLabel = $roleLabels[$pr['role']] ?? ucfirst($pr['role']);
+                        $badgeClass = match($pr['role']) {
+                            'admin' => 'danger', 'operator' => 'secondary', 'pegawai' => 'primary',
+                            'pcl' => 'success', 'pml' => 'warning text-dark', 'task_force' => 'info',
+                            'mitra' => 'dark', 'panitia' => 'purple',
+                            default => 'secondary'
+                        };
+                    ?>
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block"><?= htmlspecialchars($roleLabel) ?></small>
+                                <div class="d-flex justify-content-center gap-2 small">
+                                    <span class="text-success"><?= number_format($pr['aktif']) ?> aktif</span>
+                                    <span class="text-muted">/</span>
+                                    <span><?= number_format($pr['total']) ?> total</span>
+                                </div>
+                                <small class="badge bg-<?= $badgeClass ?> mt-1"><?= strtoupper($pr['role']) ?></small>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Petugas Lapangan (PCL/PML/TF) Summary -->
+    <?php if (!empty($petugas_stats['lapangan_roles'])): ?>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm mb-3 border-start border-success border-3">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-people-carry-box me-1 text-success"></i>Petugas Lapangan (PCL / PML / Task Force)</small>
+                <a href="?page=dashboard&sub=petugas-lapangan" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-external-link-alt me-1"></i>Buka Halaman Petugas Lapangan
+                </a>
+            </div>
+            <div class="card-body py-2">
+                <div class="row g-2">
+                    <?php foreach ($petugas_stats['lapangan_roles'] as $lr): 
+                        $roleLabel = $roleLabels[$lr['role']] ?? ucfirst($lr['role']);
+                        $badgeClass = match($lr['role']) {
+                            'pcl' => 'success', 'pml' => 'warning text-dark', 'task_force' => 'info',
+                            default => 'secondary'
+                        };
+                    ?>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block"><?= htmlspecialchars($roleLabel) ?></small>
+                                <span class="fw-bold fs-4 text-<?= $lr['role'] === 'pcl' ? 'success' : ($lr['role'] === 'pml' ? 'warning' : 'info') ?>">
+                                    <?= number_format($lr['aktif']) ?>
+                                </span>
+                                <div class="small text-muted">dari <?= number_format($lr['total']) ?> total</div>
+                                <small class="badge bg-<?= $badgeClass ?> mt-1"><?= strtoupper($lr['role']) ?></small>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- Assignment Summary -->
+<?php if (!empty($assignment_summary)): ?>
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-start border-info border-3">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-tasks me-1 text-info"></i>Ringkasan Assignment Petugas</small>
+                <a href="?page=dashboard&sub=assignment" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-external-link-alt me-1"></i>Buka Halaman Assignment
+                </a>
+            </div>
+            <div class="card-body py-2">
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Total SLS (Assignable)</small>
+                                <span class="fw-bold fs-4 text-primary"><?= number_format($assignment_summary['total_sls'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Total Non-SLS</small>
+                                <span class="fw-bold fs-4 text-info"><?= number_format($assignment_summary['total_non_sls'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Total Gabungan</small>
+                                <span class="fw-bold fs-4 text-se2026"><?= number_format($assignment_summary['total_gabungan'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Sudah Di-Assign</small>
+                                <span class="fw-bold fs-4 text-success"><?= number_format($assignment_summary['total_assigned'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Status: Belum</small>
+                                <span class="fw-bold fs-5 text-warning"><?= number_format($assignment_summary['status_belum'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Status: Proses</small>
+                                <span class="fw-bold fs-5 text-info"><?= number_format($assignment_summary['status_proses'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">Status: Selesai</small>
+                                <span class="fw-bold fs-5 text-success"><?= number_format($assignment_summary['status_selesai'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">PCL yang Di-Assign</small>
+                                <span class="fw-bold fs-5 text-success"><?= number_format($assignment_summary['pcl_assigned'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">PML yang Di-Assign</small>
+                                <span class="fw-bold fs-5 text-warning"><?= number_format($assignment_summary['pml_assigned'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center py-2">
+                                <small class="text-muted d-block">TF yang Di-Assign</small>
+                                <span class="fw-bold fs-5 text-info"><?= number_format($assignment_summary['tf_assigned'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Pegawai Scope (Kecamatan Tugas) -->
+<?php if (!empty($petugas_stats['pegawai_scope'])): ?>
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-start border-primary border-3">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-map-marker-alt me-1 text-primary"></i>Pegawai dengan Scope Kecamatan (1:1)</small>
+            </div>
+            <div class="card-body py-2">
+                <div class="table-responsive" style="max-height:200px">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nama</th>
+                                <th>Email</th>
+                                <th>Kecamatan Tugas</th>
+                                <th>Kode (7-digit)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($petugas_stats['pegawai_scope'] as $ps): ?>
+                            <tr>
+                                <td class="fw-semibold"><?= htmlspecialchars($ps['nama_lengkap'] ?? $ps['username']) ?></td>
+                                <td><small class="text-muted"><?= htmlspecialchars($ps['email'] ?? '-') ?></small></td>
+                                <td><span class="badge bg-primary"><?= htmlspecialchars($ps['nmkec'] ?? '-') ?></span></td>
+                                <td><small class="text-muted text-monospace"><?= htmlspecialchars($ps['kecamatan_tugas'] ?? '-') ?></small></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 
 <div class="card border-0 shadow-sm mb-3 card-jember">

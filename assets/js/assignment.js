@@ -3,10 +3,9 @@
  */
 
 function initPetugasSelects(container) {
-
-function initPetugasSelects(container) {
     container = container || document;
-    $(container).find('.petugas-select').each(function () {
+    var $container = $(container);
+    $container.find('.petugas-select').each(function () {
         var $el = $(this);
         if ($el.data('select2')) {
             $el.select2('destroy');
@@ -18,15 +17,38 @@ function initPetugasSelects(container) {
             allowClear: true,
             dropdownParent: $el.closest('.modal')
         });
+
+        // Trigger validation on change
+        $el.on('change', function () {
+            var modalId = $el.closest('.modal').attr('id');
+            validateForm(modalId);
+        });
     });
+}
+
+function validateForm(modalId) {
+    if (modalId === 'modalAssign') {
+        var sipwId = document.getElementById('assign_sipw_id').value;
+        var hasPcl = $('#modalAssign select[name="pencacah_id"]').val() !== '';
+        var hasPml = $('#modalAssign select[name="pengawas_id"]').val() !== '';
+        var btn = document.getElementById('btnSubmitAssign');
+        if (btn) btn.disabled = !(sipwId > 0 && hasPcl && hasPml);
+    }
+    // Tambahkan validasi untuk modal lain jika diperlukan
 }
 
 function openAssign(sipwId, nmsls, nmdesa) {
     document.getElementById('assign_sipw_id').value = sipwId;
     document.getElementById('assign_sls_info').textContent = nmsls + ' — ' + nmdesa;
-    document.querySelectorAll('.petugas-select').forEach(function (el) { el.value = ''; });
+    
+    // Reset selects and trigger change for select2
+    $('.petugas-select').val('').trigger('change');
+    
     var m = document.getElementById('modalAssign');
-    $('#modalAssign').one('shown.bs.modal', function () { initPetugasSelects(m); });
+    $('#modalAssign').one('shown.bs.modal', function () { 
+        initPetugasSelects(m); 
+        validateForm('modalAssign'); // Initial validation
+    });
     bootstrap.Modal.getOrCreateInstance(m).show();
 }
 
@@ -64,7 +86,12 @@ function loadSuggestions(kdkec, nmkec) {
                 body.innerHTML = '<div class="text-muted small">Tidak ada petugas dengan kecamatan_bertugas memuat "' + nmkec + '". Pilih manual dari dropdown di modal Assign.</div>';
                 return;
             }
-            var labels = { pegawai: 'Pegawai Organik', pcl: 'PCL (Pencacah)', pml: 'PML (Pengawas)', task_force: 'Task Force' };
+            var labels = { 
+                pegawai: 'Pegawai Organik', 
+                pcl: 'PCL (Petugas Pencacah Lapangan)', 
+                pml: 'PML (Petugas Pemeriksa Lapangan)', 
+                task_force: 'Task Force' 
+            };
             var html = '<div class="row g-2">';
             ['pegawai', 'pcl', 'pml', 'task_force'].forEach(function (role) {
                 var group = data.groups[role] || [];
@@ -81,8 +108,9 @@ function loadSuggestions(kdkec, nmkec) {
                     var loadBadge = u.current_load === 0
                         ? '<span class="badge bg-success bg-opacity-25 text-success">idle</span>'
                         : '<span class="badge bg-secondary">' + u.current_load + ' SLS</span>';
+                    var posTugas = u.posisi_tugas ? '<span class="d-block text-info" style="font-size:10px">Tugas: ' + u.posisi_tugas + '</span>' : '';
                     html += '<li class="d-flex justify-content-between align-items-center py-1 border-bottom">';
-                    html += '<span><i class="fas fa-user me-1 text-muted"></i>' + u.nama_lengkap + '<br><code class="small">' + u.username + '</code></span>';
+                    html += '<span><i class="fas fa-user me-1 text-muted"></i>' + u.nama_lengkap + '<br><code class="small">' + u.username + '</code>' + posTugas + '</span>';
                     html += loadBadge;
                     html += '</li>';
                 });
@@ -99,7 +127,7 @@ function loadSuggestions(kdkec, nmkec) {
 $(document).ready(function () {
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
         var target = $(this).attr('data-bs-target');
-        var tab = target === '#tabAssigned' ? 'assigned' : 'unassigned';
+        var tab = target === '#tabAssigned' ? 'assigned' : (target === '#tabNonSls' ? 'nonsls' : 'unassigned');
         document.getElementById('filterTab').value = tab;
     });
 

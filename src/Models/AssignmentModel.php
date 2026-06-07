@@ -31,7 +31,7 @@ class AssignmentModel
      */
     public function getSlsByDesa(string $kddesa, int $limit = 2): array
     {
-        $stmt = $this->pdo->prepare("SELECT nmsls FROM sipw_import WHERE kddesa = ? LIMIT ?");
+        $stmt = $this->pdo->prepare("SELECT idsubsls, nmsls, subsektor_st2023, jml_kk, usaha_wilkerstat FROM sipw_import WHERE kddesa = ? LIMIT ?");
         $stmt->execute([$kddesa, $limit]);
         return $stmt->fetchAll();
     }
@@ -42,11 +42,12 @@ class AssignmentModel
     public function getSlsForDownload(string $kdkec = ''): array
     {
         $sql = "
-            SELECT si.nmsls, si.nmdesa, si.nmkec, si.nama_ketua, si.kk, si.btt, si.usaha, si.muatan
+            SELECT si.id as si_id, si.idsubsls, si.nmsls, si.nmdesa, si.nmkec, si.nama_ketua, si.kk, si.btt, si.usaha, si.muatan,
+                   si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
             LEFT JOIN mfd_kec mfd ON mfd.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
-            WHERE 1=1
+            WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'
         ";
         $params = [];
         if ($kdkec !== '') {
@@ -59,6 +60,9 @@ class AssignmentModel
         return $stmt->fetchAll();
     }
 
+    /**
+     * Semua assigned SLS — hanya SLS (dengan RT/RW/DUSUN)
+     */
     public function getAll(array $filters = []): array
     {
         $sql = "
@@ -71,6 +75,7 @@ class AssignmentModel
                 sa.status,
                 sa.created_at,
                 sa.updated_at,
+                si.idsubsls,
                 si.nmsls,
                 si.nmdesa,
                 si.nmkec,
@@ -80,17 +85,20 @@ class AssignmentModel
                 si.muatan,
                 pc.username     AS pencacah,
                 pc.nama_lengkap AS pencacah_nama,
+                pc.email        AS pencacah_email,
                 pw.username     AS pengawas,
                 pw.nama_lengkap AS pengawas_nama,
+                pw.email        AS pengawas_email,
                 tf.username     AS task_force,
-                tf.nama_lengkap AS task_force_nama
+                tf.nama_lengkap AS task_force_nama,
+                tf.email        AS task_force_email
             FROM sipw_assignment sa
             JOIN sipw_import si ON si.id = sa.sipw_id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
             LEFT JOIN users pw ON pw.id = sa.pengawas_id
             LEFT JOIN users tf ON tf.id = sa.task_force_id
             LEFT JOIN mfd_kec mfd ON mfd.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
-            WHERE 1=1
+            WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'
         ";
         $params = [];
 
@@ -108,8 +116,8 @@ class AssignmentModel
         }
         if (!empty($filters['search'])) {
             $s = '%' . $filters['search'] . '%';
-            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ?)";
-            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s]);
+            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR tf.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ? OR tf.nama_lengkap LIKE ? OR pc.email LIKE ? OR pw.email LIKE ? OR tf.email LIKE ?)";
+            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s, $s, $s, $s, $s, $s]);
         }
 
         $sql .= " ORDER BY mfd.urutan, si.nmdesa, si.nmsls";
@@ -130,13 +138,17 @@ class AssignmentModel
             SELECT
                 sa.id, sa.sipw_id, sa.pencacah_id, sa.pengawas_id, sa.task_force_id,
                 sa.status, sa.created_at, sa.updated_at,
-                si.nmsls, si.nmdesa, si.nmkec, si.kdkec, si.kddesa, si.nama_ketua, si.muatan,
+                si.idsubsls, si.nmsls, si.nmdesa, si.nmkec, si.kdkec, si.kddesa, si.nama_ketua, si.muatan,
+                si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat,
                 pc.username     AS pencacah,
                 pc.nama_lengkap AS pencacah_nama,
+                pc.email        AS pencacah_email,
                 pw.username     AS pengawas,
                 pw.nama_lengkap AS pengawas_nama,
+                pw.email        AS pengawas_email,
                 tf.username     AS task_force,
-                tf.nama_lengkap AS task_force_nama
+                tf.nama_lengkap AS task_force_nama,
+                tf.email        AS task_force_email
             FROM sipw_assignment sa
             JOIN sipw_import si ON si.id = sa.sipw_id
             LEFT JOIN users pc ON pc.id = sa.pencacah_id
@@ -178,7 +190,7 @@ class AssignmentModel
      */
     private function buildAssignedWhere(array $filters): array
     {
-        $sql = "WHERE 1=1";
+        $sql = "WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'";
         $params = [];
         if (!empty($filters['kdkec'])) {
             $sql .= " AND si.kdkec = ?";
@@ -194,8 +206,8 @@ class AssignmentModel
         }
         if (!empty($filters['search'])) {
             $s = '%' . $filters['search'] . '%';
-            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ?)";
-            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s]);
+            $sql .= " AND (si.nmsls LIKE ? OR si.nmkec LIKE ? OR si.nmdesa LIKE ? OR pc.username LIKE ? OR pw.username LIKE ? OR tf.username LIKE ? OR pc.nama_lengkap LIKE ? OR pw.nama_lengkap LIKE ? OR tf.nama_lengkap LIKE ? OR pc.email LIKE ? OR pw.email LIKE ? OR tf.email LIKE ?)";
+            $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s, $s, $s, $s, $s, $s]);
         }
         return [$sql, $params];
     }
@@ -329,8 +341,9 @@ class AssignmentModel
     public function getUnassigned(?string $kdkec = null, ?string $kddesa = null, string $search = ''): array
     {
         $sql = "
-            SELECT si.id, si.kdkec, si.kddesa, si.nmkec, si.nmdesa,
-                   si.nmsls, si.nama_ketua, si.muatan, si.kk, si.btt, si.bku, si.usaha
+            SELECT si.id, si.idsubsls, si.kdkec, si.kddesa, si.nmkec, si.nmdesa,
+                   si.nmsls, si.nama_ketua, si.muatan, si.kk, si.btt, si.bku, si.usaha,
+                   si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
             LEFT JOIN mfd_kec mfd ON mfd.kode_kecamatan = CONCAT(SUBSTRING(si.kdprov, 1, 2), SUBSTRING(si.kdkab, 1, 2), si.kdkec)
@@ -367,7 +380,7 @@ class AssignmentModel
         $offset = max(0, ($page - 1) * $perPage);
         [$where, $params] = $this->buildUnassignedWhere($kdkec, $kddesa, $search);
         $sql = "
-            SELECT si.id, si.kdkec, si.kddesa, si.nmkec, si.nmdesa,
+            SELECT si.id, si.idsubsls, si.kdkec, si.kddesa, si.nmkec, si.nmdesa,
                    si.nmsls, si.nama_ketua, si.muatan, si.kk, si.btt, si.bku, si.usaha
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
@@ -400,7 +413,7 @@ class AssignmentModel
      */
     private function buildUnassignedWhere(?string $kdkec, ?string $kddesa, string $search): array
     {
-        $sql = "WHERE sa.id IS NULL";
+        $sql = "WHERE sa.id IS NULL AND si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'";
         $params = [];
         if ($kdkec) {
             $sql .= " AND si.kdkec = ?";
@@ -449,12 +462,12 @@ class AssignmentModel
      */
     public function getPetugasByRole(string ...$roles): array
     {
-        $roles = array_intersect($roles, ['admin', 'operator', 'pegawai', 'mitra', 'pcl', 'pml', 'task_force', 'pegawai']);
+        $roles = array_unique(array_intersect($roles, ['admin', 'operator', 'pegawai', 'mitra', 'pcl', 'pml', 'task_force']));
         if (empty($roles)) return [];
 
         $placeholders = implode(',', array_fill(0, count($roles), '?'));
         $stmt = $this->pdo->prepare("
-            SELECT id, username, nama_lengkap, email, role
+            SELECT id, username, nama_lengkap, email, role, posisi_daftar, posisi_tugas
             FROM users
             WHERE status_akun = 'active' AND role IN ({$placeholders})
             ORDER BY role, username
@@ -493,11 +506,15 @@ class AssignmentModel
     }
 
     /**
-     * Count summary
+     * Count summary — hanya SLS (dengan RT/RW/DUSUN)
      */
     public function countSummary(): array
     {
-        return $this->pdo->query("
+        // Get total gabungan first (all records in sipw_import for Jember)
+        $totalGabungan = (int) $this->pdo->query("SELECT COUNT(*) FROM sipw_import WHERE kdkab = '09'")->fetchColumn();
+
+        // Get filtered SLS stats
+        $slsStats = $this->pdo->query("
             SELECT
                 COUNT(DISTINCT si.id)                                                   AS total_sls,
                 COUNT(DISTINCT sa.id)                                                   AS total_assign,
@@ -507,10 +524,19 @@ class AssignmentModel
                 COALESCE(SUM(CASE WHEN sa.id IS NULL THEN 1 ELSE 0 END), 0)             AS belum_assign,
                 COUNT(DISTINCT sa.pencacah_id)                                           AS pcl_aktif,
                 COUNT(DISTINCT sa.pengawas_id)                                           AS pml_aktif,
-                COUNT(DISTINCT sa.task_force_id)                                         AS tf_aktif
+                COUNT(DISTINCT sa.task_force_id)                                         AS tf_aktif,
+                COALESCE(SUM(si.subsektor_st2023), 0)                                   AS total_subsektor,
+                COALESCE(SUM(si.jml_kk), 0)                                             AS total_kk,
+                COALESCE(SUM(si.usaha_wilkerstat), 0)                                   AS total_usaha
             FROM sipw_import si
             LEFT JOIN sipw_assignment sa ON sa.sipw_id = si.id
+            WHERE si.nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND si.kdkab = '09'
         ")->fetch();
+
+        $slsStats['total_gabungan'] = $totalGabungan;
+        $slsStats['total_non_sls'] = $totalGabungan - $slsStats['total_sls'];
+
+        return $slsStats;
     }
 
     /**
@@ -523,6 +549,7 @@ class AssignmentModel
                 u.id,
                 u.username,
                 u.nama_lengkap,
+                u.email,
                 u.role,
                 SUM(CASE WHEN sa.pencacah_id = u.id THEN 1 ELSE 0 END) AS as_pencacah,
                 SUM(CASE WHEN sa.pengawas_id = u.id THEN 1 ELSE 0 END) AS as_pengawas,
@@ -534,7 +561,7 @@ class AssignmentModel
                 OR sa.pengawas_id = u.id
                 OR sa.task_force_id = u.id
             WHERE u.status_akun = 'active'
-            GROUP BY u.id, u.username, u.role
+            GROUP BY u.id, u.username, u.nama_lengkap, u.email, u.role
             HAVING as_pencacah > 0 OR as_pengawas > 0 OR as_task_force > 0
             ORDER BY as_pencacah + as_pengawas + as_task_force DESC
         ";
@@ -561,7 +588,10 @@ class AssignmentModel
                 u.nama_lengkap,
                 u.email,
                 u.role,
+                u.posisi_daftar,
+                u.posisi_tugas,
                 u.kecamatan_bertugas,
+                u.kecamatan_domisili,
                 COALESCE(ld.cnt, 0) AS current_load,
                 CASE
                     WHEN u.role = 'pegawai' THEN 'organik'
@@ -579,18 +609,15 @@ class AssignmentModel
                 ) t GROUP BY id
             ) ld ON ld.id = u.id
             WHERE u.status_akun = 'active'
-              AND u.role IN ('pcl','pml','task_force','pegawai')
-              AND u.kecamatan_bertugas IS NOT NULL
-              AND u.kecamatan_bertugas != ''
-              AND u.kecamatan_bertugas REGEXP ?
-            ORDER BY
-                FIELD(u.role, 'pegawai', 'pcl', 'pml', 'task_force'),
-                current_load ASC,
-                u.username
+              AND (
+                u.kecamatan_bertugas LIKE ?
+                OR u.kecamatan_domisili LIKE ?
+                OR u.role = 'pegawai'
+              )
+            ORDER BY source ASC, current_load ASC
         ";
-        $pattern = '(^|, )' . preg_quote($nmkec, '/') . '(,|$)';
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$pattern]);
+        $stmt->execute(["%$nmkec%", "%$nmkec%"]);
         return $stmt->fetchAll();
     }
 
@@ -603,5 +630,63 @@ class AssignmentModel
         $stmt->execute([$kdkec]);
         $r = $stmt->fetch();
         return $r ? $r['nmkec'] : null;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Non-SLS queries — dari sipw_import, filter non-RT/RW/DUSUN
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Non-SLS filter WHERE clause (reusable). $alias = prefix untuk kolom (misal 'si' atau '')
+     */
+    private function nonSlsWhere(string $alias = 'si'): string
+    {
+        $p = $alias ? "{$alias}." : '';
+        return "{$p}nmsls NOT REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun' AND {$p}kdkab = '09'";
+    }
+
+    /**
+     * Paginated Non-SLS data from sipw_import (no RT/RW/DUSUN)
+     */
+    public function getNonSlsPaginated(int $page = 1, int $perPage = 25): array
+    {
+        $offset = max(0, ($page - 1) * $perPage);
+        $sql = "
+            SELECT si.id, si.idsubsls, si.kdkec, si.kddesa, si.nmkec, si.nmdesa,
+                   si.nmsls, si.nama_ketua, si.muatan, si.kk, si.usaha,
+                   si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat
+            FROM sipw_import si
+            WHERE {$this->nonSlsWhere()}
+            ORDER BY si.nmkec, si.nmdesa, si.nmsls
+            LIMIT ? OFFSET ?
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$perPage, $offset]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Count Non-SLS dari sipw_import
+     */
+    public function countNonSls(): int
+    {
+        $sql = "SELECT COUNT(*) FROM sipw_import WHERE {$this->nonSlsWhere('')}";
+        return (int) $this->pdo->query($sql)->fetchColumn();
+    }
+
+    /**
+     * All Non-SLS data for download
+     */
+    public function getNonSlsForDownload(): array
+    {
+        $sql = "
+            SELECT si.kdkec, si.nmkec, si.kddesa, si.nmdesa, si.idsubsls,
+                   si.nmsls, si.nama_ketua, si.kk, si.usaha, si.muatan,
+                   si.subsektor_st2023, si.jml_kk, si.usaha_wilkerstat
+            FROM sipw_import si
+            WHERE {$this->nonSlsWhere()}
+            ORDER BY si.nmkec, si.nmdesa, si.nmsls
+        ";
+        return $this->pdo->query($sql)->fetchAll();
     }
 }

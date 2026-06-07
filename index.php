@@ -112,6 +112,7 @@ $controllerMap = [
         'wilayah'    => ['WilayahController', 'index'],
         'petugas'           => ['PetugasController', 'index'],
         'petugas-lapangan'  => ['PclPmlTfController', 'index'],
+        'pml-report'        => ['PmlReportController', 'index'],
         'audit'             => ['AuditLogController', 'index'],
         'report'     => ['ReportController', 'index'],
         'insight'    => ['InsightController', 'index'],

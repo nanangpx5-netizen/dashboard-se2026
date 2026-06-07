@@ -26,6 +26,8 @@ class DashboardController extends Controller
         $stats = $this->getStats($pdo);
         $wilayahData = $this->getWilayahData($pdo);
         $bebanPencacah = $this->bebanPencacah($pdo);
+        $petugasStats = $this->getPetugasStats($pdo);
+        $assignmentSummary = $this->getAssignmentSummary($pdo);
 
         // Prelist SE2026 data
         $prelistImported = $this->prelist()->isImported();
@@ -73,6 +75,9 @@ class DashboardController extends Controller
             'prelist_anomali_sls'   => $prelistAnomaliSls,
             'prelist_anomali_summary' => $prelistAnomaliSummary,
             'prelist_map_kec'       => $prelistMapKec,
+            'petugas_stats'       => $petugasStats,
+            'assignment_summary'  => $assignmentSummary,
+            'roleLabels'          => ROLE_LABELS,
             'js'                    => ['dashboard', 'dashboard-map'],
         ]);
     }
@@ -88,6 +93,9 @@ class DashboardController extends Controller
                     COALESCE(SUM(COALESCE(kk,0)),0)               AS total_kk,
                     COALESCE(SUM(COALESCE(usaha,0)),0)            AS total_usaha,
                     COALESCE(SUM(COALESCE(muatan,0)),0)           AS total_muatan,
+                    COALESCE(SUM(COALESCE(subsektor_st2023,0)),0) AS total_subsektor,
+                    COALESCE(SUM(COALESCE(jml_kk,0)),0)           AS total_jml_kk,
+                    COALESCE(SUM(COALESCE(usaha_wilkerstat,0)),0) AS total_usaha_wilker,
                     COALESCE(SUM(COALESCE(btt,0)),0)              AS total_bstt,
                     COALESCE(SUM(COALESCE(bbtt_nonusaha,0)),0)    AS total_bsbtt,
                     COALESCE(SUM(COALESCE(bttk,0)),0)             AS total_bsttk,
@@ -244,5 +252,112 @@ class DashboardController extends Controller
             'dup_kode'     => 0,
             'dup_rows'     => 0,
         ];
+    }
+
+    /**
+     * Statistik Petugas (untuk integrasi halaman Petugas & Petugas Lapangan)
+     */
+    private function getPetugasStats(\PDO $pdo): array
+    {
+        return Cache::remember('dashboard_petugas_stats', 60, function () use ($pdo): array {
+            // Semua role dengan count aktif/total
+            $allRoles = $pdo->query("
+                SELECT
+                    role,
+                    SUM(CASE WHEN status_akun = 'active' THEN 1 ELSE 0 END) AS aktif,
+                    COUNT(*) AS total
+                FROM users
+                GROUP BY role
+                ORDER BY
+                    CASE role
+                        WHEN 'admin' THEN 1
+                        WHEN 'operator' THEN 2
+                        WHEN 'pegawai' THEN 3
+                        WHEN 'pcl' THEN 4
+                        WHEN 'pml' THEN 5
+                        WHEN 'task_force' THEN 6
+                        WHEN 'mitra' THEN 7
+                        WHEN 'panitia' THEN 8
+                        ELSE 9
+                    END
+            ")->fetchAll();
+
+            // Petugas Lapangan only (PCL, PML, TF)
+            $lapanganRoles = $pdo->query("
+                SELECT
+                    role,
+                    SUM(CASE WHEN status_akun = 'active' THEN 1 ELSE 0 END) AS aktif,
+                    COUNT(*) AS total
+                FROM users
+                WHERE role IN ('pcl','pml','task_force')
+                GROUP BY role
+            ")->fetchAll();
+
+            // Recent petugas (last 10 created)
+            $recentPetugas = $pdo->query("
+                SELECT id, username, nama_lengkap, email, role, status_akun, created_at
+                FROM users
+                ORDER BY created_at DESC
+                LIMIT 10
+            ")->fetchAll();
+
+            // Users with kecamatan_tugas (pegawai scope)
+            $pegawaiWithScope = $pdo->query("
+                SELECT u.id, u.username, u.nama_lengkap, u.email, u.kecamatan_tugas,
+                       si.nmkec
+                FROM users u
+                LEFT JOIN sipw_import si ON si.kdkec = SUBSTR(u.kecamatan_tugas, -3) AND si.kdkab = '09'
+                WHERE u.role = 'pegawai' AND u.kecamatan_tugas IS NOT NULL
+                LIMIT 10
+            ")->fetchAll();
+
+            return [
+                'all_roles'        => $allRoles,
+                'lapangan_roles'   => $lapanganRoles,
+                'recent_petugas'   => $recentPetugas,
+                'pegawai_scope'    => $pegawaiWithScope,
+            ];
+        });
+    }
+
+    /**
+     * Ringkasan Assignment (untuk quick view di dashboard)
+     */
+    private function getAssignmentSummary(\PDO $pdo): array
+    {
+        return Cache::remember('dashboard_assignment_summary', 60, function () use ($pdo): array {
+            $totalAssigned = (int) $pdo->query("SELECT COUNT(*) FROM sipw_assignment")->fetchColumn();
+            $totalSls = (int) $pdo->query("SELECT COUNT(*) FROM sipw_import WHERE kdkab = '09' AND nmsls REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'")->fetchColumn();
+            $totalNonSls = (int) $pdo->query("SELECT COUNT(*) FROM sipw_import WHERE kdkab = '09' AND nmsls NOT REGEXP 'RT[0-9 ]|RW[0-9 ]|DUSUN|dusun'")->fetchColumn();
+
+            $statusCounts = $pdo->query("
+                SELECT status, COUNT(*) AS total
+                FROM sipw_assignment
+                GROUP BY status
+            ")->fetchAll();
+
+            $statusMap = ['belum' => 0, 'proses' => 0, 'selesai' => 0];
+            foreach ($statusCounts as $s) {
+                $statusMap[$s['status']] = (int) $s['total'];
+            }
+
+            // Petugas yang sudah mendapat assignment
+            $pclAssigned = (int) $pdo->query("SELECT COUNT(DISTINCT pencacah_id) FROM sipw_assignment WHERE pencacah_id IS NOT NULL")->fetchColumn();
+            $pmlAssigned = (int) $pdo->query("SELECT COUNT(DISTINCT pengawas_id) FROM sipw_assignment WHERE pengawas_id IS NOT NULL")->fetchColumn();
+            $tfAssigned = (int) $pdo->query("SELECT COUNT(DISTINCT task_force_id) FROM sipw_assignment WHERE task_force_id IS NOT NULL")->fetchColumn();
+
+            return [
+                'total_assigned'   => $totalAssigned,
+                'total_sls'        => $totalSls,
+                'total_non_sls'    => $totalNonSls,
+                'total_gabungan'   => $totalSls + $totalNonSls,
+                'status_belum'     => $statusMap['belum'],
+                'status_proses'    => $statusMap['proses'],
+                'status_selesai'   => $statusMap['selesai'],
+                'pcl_assigned'     => $pclAssigned,
+                'pml_assigned'     => $pmlAssigned,
+                'tf_assigned'      => $tfAssigned,
+            ];
+        });
     }
 }

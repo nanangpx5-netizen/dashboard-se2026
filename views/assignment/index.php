@@ -16,6 +16,9 @@
  * @var int $page_num
  * @var int $per_page
  * @var int $total_pages
+ * @var int $total_non_sls
+ * @var int $total_pages_non_sls
+ * @var array $non_sls_data
  * @var string $tab
  */
 
@@ -65,7 +68,7 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
             <i class="fas fa-download me-1"></i>Template
         </a>
         <a href="?page=dashboard&sub=assignment&action=download<?= !empty($filters['kdkec']) ? '&kdkec=' . urlencode($filters['kdkec']) : '' ?>" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-file-excel me-1"></i>Download SLS
+            <i class="fas fa-file-excel me-1"></i>Download SLS & Non SLS
         </a>
         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportAssign">
             <i class="fas fa-file-excel me-1"></i>Import Excel
@@ -119,8 +122,52 @@ function renderPagination(int $page, int $totalPages, int $perPage, string $tab)
     </div>
     <div class="col-md-2 col-4">
         <div class="card border-0 shadow-sm text-center py-2 h-100">
-            <small class="text-muted">PCL/PML/TF Aktif</small>
+            <small class="text-muted">PCL/PML Aktif</small>
             <span class="fw-bold fs-5 text-info"><?= number_format(($summary['pcl_aktif'] ?? 0) + ($summary['pml_aktif'] ?? 0) + ($summary['tf_aktif'] ?? 0)) ?></span>
+        </div>
+    </div>
+</div>
+
+<!-- ─── 3 New Elements (SLS, Non-SLS, Total Gabungan) ──────────────── -->
+<div class="row g-2 mb-3">
+    <div class="col-md-4 col-6">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-primary border-3">
+            <small class="text-muted">Jumlah SLS</small>
+            <span class="fw-bold fs-5 text-primary"><?= number_format($summary['total_sls'] ?? 0) ?></span>
+        </div>
+    </div>
+    <div class="col-md-4 col-6">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-info border-3">
+            <small class="text-muted">Jumlah Non SLS</small>
+            <span class="fw-bold fs-5 text-info"><?= number_format($summary['total_non_sls'] ?? 0) ?></span>
+        </div>
+    </div>
+    <div class="col-md-4 col-12">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-se2026 border-3">
+            <small class="text-muted">Total Gabungan (SLS + Non SLS)</small>
+            <span class="fw-bold fs-5 text-se2026"><?= number_format($summary['total_gabungan'] ?? 0) ?></span>
+        </div>
+    </div>
+</div>
+
+<!-- ─── 3 New Perhitungan (Subsektor, KK, Usaha) ──────────────────── -->
+<div class="row g-2 mb-3">
+    <div class="col-md-4 col-4">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-warning border-3">
+            <small class="text-muted">Total Subsektor ST2023</small>
+            <span class="fw-bold fs-5 text-warning"><?= number_format($summary['total_subsektor'] ?? 0) ?></span>
+        </div>
+    </div>
+    <div class="col-md-4 col-4">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-success border-3">
+            <small class="text-muted">Total KK (Kepala Keluarga)</small>
+            <span class="fw-bold fs-5 text-success"><?= number_format($summary['total_kk'] ?? 0) ?></span>
+        </div>
+    </div>
+    <div class="col-md-4 col-4">
+        <div class="card border-0 shadow-sm text-center py-2 h-100 border-start border-danger border-3">
+            <small class="text-muted">Total Usaha Wilkerstat</small>
+            <span class="fw-bold fs-5 text-danger"><?= number_format($summary['total_usaha'] ?? 0) ?></span>
         </div>
     </div>
 </div>
@@ -239,6 +286,12 @@ foreach ($kecamatan as $k) {
             <span class="badge bg-warning text-dark"><?= number_format($total_unassigned ?? 0) ?></span>
         </button>
     </li>
+    <li class="nav-item">
+        <button class="nav-link small" data-bs-toggle="tab" data-bs-target="#tabNonSls">
+            <i class="fas fa-database me-1"></i>Non-SLS
+            <span class="badge bg-info"><?= number_format($total_non_sls ?? 0) ?></span>
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content">
@@ -251,12 +304,11 @@ foreach ($kecamatan as $k) {
                         <thead class="table-light">
                             <tr>
                                 <th style="width:40px">No</th>
+                                <th>ID SLS</th>
                                 <th>SLS</th>
-                                <th>Desa</th>
-                                <th>Kecamatan</th>
-                                <th class="text-center">Muatan</th>
-                                <th>PCL</th>
-                                <th>PML</th>
+                                <th class="text-center">Parameter</th>
+                                <th>PCL (Pencacah)</th>
+                                <th>PML (Pemeriksa)</th>
                                 <th>Task Force</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Aksi</th>
@@ -267,13 +319,21 @@ foreach ($kecamatan as $k) {
                             <?php foreach ($assignments as $r): ?>
                             <tr>
                                 <td class="text-center text-muted"><?= $i++ ?></td>
-                                <td class="fw-semibold"><?= htmlspecialchars($r['nmsls'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($r['nmdesa'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($r['nmkec'] ?? '-') ?></td>
-                                <td class="text-center"><?= number_format($r['muatan'] ?? 0) ?></td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success"><?= htmlspecialchars($r['pencacah_nama'] ?: $r['pencacah'] ?: '-') ?></span></td>
-                                <td><span class="badge bg-warning bg-opacity-10 text-warning"><?= htmlspecialchars($r['pengawas_nama'] ?: $r['pengawas'] ?: '-') ?></span></td>
-                                <td><span class="badge bg-info bg-opacity-10 text-info"><?= htmlspecialchars($r['task_force_nama'] ?: $r['task_force'] ?: '-') ?></span></td>
+                                <td><code class="small"><?= htmlspecialchars($r['idsubsls'] ?? '-') ?></code></td>
+                                <td class="fw-semibold"><?= htmlspecialchars($r['nmsls'] ?? '-') ?>
+                                    <small class="text-muted d-block"><?= htmlspecialchars($r['nmdesa'] ?? '') ?>, <?= htmlspecialchars($r['nmkec'] ?? '') ?></small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column small">
+                                        <span title="Muatan">M: <?= number_format($r['muatan'] ?? 0) ?></span>
+                                        <span title="Subsektor" class="text-warning">S: <?= number_format($r['subsektor_st2023'] ?? 0) ?></span>
+                                        <span title="Jumlah KK" class="text-success">K: <?= number_format($r['jml_kk'] ?? 0) ?></span>
+                                        <span title="Usaha Wilkerstat" class="text-danger">U: <?= number_format($r['usaha_wilkerstat'] ?? 0) ?></span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success"><?= htmlspecialchars($r['pencacah_nama'] ?: $r['pencacah_email'] ?: '-') ?></span></td>
+                                <td><span class="badge bg-warning bg-opacity-10 text-warning"><?= htmlspecialchars($r['pengawas_nama'] ?: $r['pengawas_email'] ?: '-') ?></span></td>
+                                <td><span class="badge bg-info bg-opacity-10 text-info"><?= htmlspecialchars($r['task_force_nama'] ?: $r['task_force_email'] ?: '-') ?></span></td>
                                 <td class="text-center">
                                     <form method="POST" action="?page=dashboard&sub=assignment&action=status" class="d-inline">
                                         <?= $csrf_field ?? '' ?>
@@ -298,7 +358,7 @@ foreach ($kecamatan as $k) {
                             </tr>
                             <?php endforeach; ?>
                             <?php if (empty($assignments)): ?>
-                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">Belum ada data assignment</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -317,14 +377,10 @@ foreach ($kecamatan as $k) {
                         <thead class="table-light">
                             <tr>
                                 <th style="width:40px">No</th>
+                                <th>ID SLS</th>
                                 <th>SLS</th>
-                                <th>Desa</th>
-                                <th>Kecamatan</th>
                                 <th>Ketua SLS</th>
-                                <th class="text-center">KK</th>
-                                <th class="text-center">BTT</th>
-                                <th class="text-center">Usaha</th>
-                                <th class="text-center">Muatan</th>
+                                <th class="text-center">Parameter</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -333,14 +389,19 @@ foreach ($kecamatan as $k) {
                             <?php foreach ($unassigned as $r): ?>
                             <tr>
                                 <td class="text-center text-muted"><?= $i++ ?></td>
-                                <td class="fw-semibold"><?= htmlspecialchars($r['nmsls'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($r['nmdesa'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($r['nmkec'] ?? '-') ?></td>
+                                <td><code class="small"><?= htmlspecialchars($r['idsubsls'] ?? '-') ?></code></td>
+                                <td class="fw-semibold"><?= htmlspecialchars($r['nmsls'] ?? '-') ?>
+                                    <small class="text-muted d-block"><?= htmlspecialchars($r['nmdesa'] ?? '') ?>, <?= htmlspecialchars($r['nmkec'] ?? '') ?></small>
+                                </td>
                                 <td><?= htmlspecialchars($r['nama_ketua'] ?? '-') ?></td>
-                                <td class="text-center"><?= number_format($r['kk'] ?? 0) ?></td>
-                                <td class="text-center"><?= number_format($r['btt'] ?? 0) ?></td>
-                                <td class="text-center"><?= number_format($r['usaha'] ?? 0) ?></td>
-                                <td class="text-center fw-semibold"><?= number_format($r['muatan'] ?? 0) ?></td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column small">
+                                        <span title="Muatan">M: <?= number_format($r['muatan'] ?? 0) ?></span>
+                                        <span title="Subsektor" class="text-warning">S: <?= number_format($r['subsektor_st2023'] ?? 0) ?></span>
+                                        <span title="Jumlah KK" class="text-success">K: <?= number_format($r['jml_kk'] ?? 0) ?></span>
+                                        <span title="Usaha Wilkerstat" class="text-danger">U: <?= number_format($r['usaha_wilkerstat'] ?? 0) ?></span>
+                                    </div>
+                                </td>
                                 <td class="text-center">
                                     <button class="btn btn-se2026 btn-sm py-0" onclick="openAssign(<?= $r['id'] ?>, '<?= htmlspecialchars(addslashes($r['nmsls'] ?? '')) ?>', '<?= htmlspecialchars(addslashes($r['nmdesa'] ?? '')) ?>')">
                                         <i class="fas fa-user-plus me-1"></i>Assign
@@ -349,12 +410,70 @@ foreach ($kecamatan as $k) {
                             </tr>
                             <?php endforeach; ?>
                             <?php if (empty($unassigned)): ?>
-                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-4">Semua SLS sudah di-assign</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
                 <?php renderPagination($page_num, $total_pages, $per_page, 'unassigned'); ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ TAB: NON-SLS (MFD, tanpa RT/RW/DUSUN) ═══════ -->
+    <div class="tab-pane fade" id="tabNonSls">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <small class="fw-semibold"><i class="fas fa-database me-1"></i>Data Non-SLS (tanpa RT/RW/Dusun) dari MFD</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small" id="tableNonSls">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px">No</th>
+                                <th>ID SLS</th>
+                                <th>SLS</th>
+                                <th>Ketua SLS</th>
+                                <th class="text-center">Parameter</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $i = 1; ?>
+                            <?php foreach ($non_sls_data as $r): ?>
+                            <tr>
+                                <td class="text-center text-muted"><?= $i++ ?></td>
+                                <td><code class="small"><?= htmlspecialchars($r['idsubsls'] ?? '-') ?></code></td>
+                                <td class="fw-semibold"><?= htmlspecialchars($r['nmsls'] ?? '-') ?>
+                                    <small class="text-muted d-block"><?= htmlspecialchars($r['nmdesa'] ?? '') ?>, <?= htmlspecialchars($r['nmkec'] ?? '') ?></small>
+                                </td>
+                                <td><?= htmlspecialchars($r['nama_ketua'] ?? '-') ?></td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column small">
+                                        <span title="Muatan">M: <?= number_format($r['muatan'] ?? 0) ?></span>
+                                        <span title="Subsektor" class="text-warning">S: <?= number_format($r['subsektor_st2023'] ?? 0) ?></span>
+                                        <span title="Jumlah KK" class="text-success">K: <?= number_format($r['jml_kk'] ?? 0) ?></span>
+                                        <span title="Usaha Wilkerstat" class="text-danger">U: <?= number_format($r['usaha_wilkerstat'] ?? 0) ?></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($non_sls_data)): ?>
+                            <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data Non-SLS</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top small">
+                    <span class="text-muted">Total: <?= number_format($total_non_sls ?? 0) ?> Non-SLS</span>
+                    <?php if (($total_pages_non_sls ?? 1) > 1): ?>
+                    <div>
+                        <span class="text-muted me-2">Halaman <?= min($page_num, $total_pages_non_sls) ?> / <?= $total_pages_non_sls ?></span>
+                        <a href="?page=dashboard&sub=assignment&hal=<?= max(1, $page_num - 1) ?>&tab=nonsls" class="btn btn-outline-secondary btn-sm py-0">&laquo;</a>
+                        <a href="?page=dashboard&sub=assignment&hal=<?= min($total_pages_non_sls, $page_num + 1) ?>&tab=nonsls" class="btn btn-outline-secondary btn-sm py-0">&raquo;</a>
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -381,20 +500,20 @@ foreach ($kecamatan as $k) {
                     </div>
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Pencacah (PCL)</label>
+                            <label class="form-label small fw-semibold">PCL (Petugas Pencacah Lapangan)</label>
                             <select name="pencacah_id" class="form-select form-select-sm petugas-select" data-role="pcl">
-                                <option value="">-- Pilih PCL --</option>
+                                <option value="">-- Pilih PCL (Petugas Pencacah Lapangan) --</option>
                                 <?php foreach ($pcl_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Pengawas (PML)</label>
+                            <label class="form-label small fw-semibold">PML (Petugas Pemeriksa Lapangan)</label>
                             <select name="pengawas_id" class="form-select form-select-sm petugas-select" data-role="pml">
-                                <option value="">-- Pilih PML --</option>
+                                <option value="">-- Pilih PML (Petugas Pemeriksa Lapangan) --</option>
                                 <?php foreach ($pml_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -403,7 +522,7 @@ foreach ($kecamatan as $k) {
                             <select name="task_force_id" class="form-select form-select-sm petugas-select" data-role="tf">
                                 <option value="">-- Pilih Task Force --</option>
                                 <?php foreach ($tf_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -411,7 +530,7 @@ foreach ($kecamatan as $k) {
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-se2026"><i class="fas fa-save me-1"></i>Simpan</button>
+                    <button type="submit" id="btnSubmitAssign" class="btn btn-sm btn-se2026" disabled><i class="fas fa-save me-1"></i>Simpan</button>
                 </div>
             </div>
         </form>
@@ -430,37 +549,37 @@ foreach ($kecamatan as $k) {
                     <h6 class="modal-title fw-semibold"><i class="fas fa-user-pen me-1"></i>Edit Assignment</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" name="sipw_id" id="edit_sipw_id" value="0">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Pencacah (PCL)</label>
-                            <select name="pencacah_id" id="edit_pencacah_id" class="form-select form-select-sm petugas-select" data-role="pcl">
-                                <option value="">-- Pilih PCL --</option>
-                                <?php foreach ($pcl_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                    <div class="modal-body">
+                        <input type="hidden" name="sipw_id" id="edit_sipw_id" value="0">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">PCL (Petugas Pencacah Lapangan)</label>
+                                <select name="pencacah_id" id="edit_pencacah_id" class="form-select form-select-sm petugas-select" data-role="pcl">
+                                    <option value="">-- Pilih PCL (Petugas Pencacah Lapangan) --</option>
+                                    <?php foreach ($pcl_list as $p): ?>
+                                    <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">PML (Petugas Pemeriksa Lapangan)</label>
+                                <select name="pengawas_id" id="edit_pengawas_id" class="form-select form-select-sm petugas-select" data-role="pml">
+                                    <option value="">-- Pilih PML (Petugas Pemeriksa Lapangan) --</option>
+                                    <?php foreach ($pml_list as $p): ?>
+                                    <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Task Force</label>
+                                <select name="task_force_id" id="edit_task_force_id" class="form-select form-select-sm petugas-select" data-role="tf">
+                                    <option value="">-- Pilih Task Force --</option>
+                                    <?php foreach ($tf_list as $p): ?>
+                                    <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['email'] ?: $p['nama_lengkap']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Pengawas (PML)</label>
-                            <select name="pengawas_id" id="edit_pengawas_id" class="form-select form-select-sm petugas-select" data-role="pml">
-                                <option value="">-- Pilih PML --</option>
-                                <?php foreach ($pml_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Task Force</label>
-                            <select name="task_force_id" id="edit_task_force_id" class="form-select form-select-sm petugas-select" data-role="tf">
-                                <option value="">-- Pilih Task Force --</option>
-                                <?php foreach ($tf_list as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['nama_lengkap'] ?: $p['username']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
@@ -487,7 +606,7 @@ foreach ($kecamatan as $k) {
                     <div class="alert alert-info py-2 small">
                         <i class="fas fa-info-circle me-1"></i>
                         File Excel harus memiliki kolom: <strong>nmsls</strong>, <strong>nmdesa</strong>, <strong>nmkec</strong>,
-                        dan opsional <strong>pcl</strong>, <strong>pml</strong>, <strong>task_force</strong> (username).
+                        dan opsional <strong>pcl</strong>, <strong>pml</strong>, <strong>task_force</strong> (email).
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">File Excel</label>
@@ -580,9 +699,9 @@ foreach ($kecamatan as $k) {
                             <tr>
                                 <th>Petugas</th>
                                 <th>Role</th>
-                                <th class="text-center">Sebagai PCL</th>
-                                <th class="text-center">Sebagai PML</th>
-                                <th class="text-center">Sebagai TF</th>
+                                <th class="text-center">PCL (Petugas Pencacah)</th>
+                                <th class="text-center">PML (Petugas Pemeriksa)</th>
+                                <th class="text-center">TF</th>
                                 <th class="text-center">Total</th>
                                 <th class="text-center">Selesai PCL</th>
                                 <th class="text-center">Selesai PML</th>
@@ -591,7 +710,7 @@ foreach ($kecamatan as $k) {
                         <tbody>
                             <?php foreach ($petugas_load as $pl): ?>
                             <tr>
-                                <td><?= htmlspecialchars($pl['nama_lengkap'] ?: $pl['username']) ?></td>
+                                <td><?= htmlspecialchars($pl['nama_lengkap'] ?: $pl['email']) ?></td>
                                 <td><span class="badge bg-<?= $pl['role'] === 'admin' ? 'danger' : ($pl['role'] === 'pml' ? 'warning text-dark' : ($pl['role'] === 'pcl' ? 'success' : 'info')) ?>"><?= $pl['role'] ?></span></td>
                                 <td class="text-center"><?= number_format($pl['as_pencacah']) ?></td>
                                 <td class="text-center"><?= number_format($pl['as_pengawas']) ?></td>

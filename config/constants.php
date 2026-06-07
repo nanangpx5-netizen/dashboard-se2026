@@ -32,8 +32,8 @@ const ROLE_LABELS = [
     ROLE_OPERATOR   => 'Operator',
     ROLE_PEGAWAI    => 'Pegawai BPS',
     ROLE_MITRA      => 'Mitra',
-    ROLE_PML        => 'PML',
-    ROLE_PCL        => 'PCL',
+    ROLE_PML        => 'PML (Petugas Pemeriksa Lapangan)',
+    ROLE_PCL        => 'PCL (Petugas Pencacah Lapangan)',
     ROLE_TASK_FORCE => 'Task Force',
 ];
 
@@ -83,6 +83,7 @@ const PAGE_ACCESS = [
         'wilayah'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_TASK_FORCE],
         'petugas'    => [ROLE_ADMIN],
         'petugas-lapangan'  => [ROLE_ADMIN],
+        'pml-report'        => [ROLE_ADMIN, ROLE_OPERATOR],
         'audit'      => [ROLE_ADMIN, ROLE_OPERATOR],
         'report'     => [ROLE_ADMIN, ROLE_OPERATOR],
         'insight'    => [ROLE_ADMIN, ROLE_OPERATOR, ROLE_TASK_FORCE, ROLE_PML, ROLE_PCL],

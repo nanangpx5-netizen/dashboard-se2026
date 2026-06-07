@@ -88,6 +88,11 @@ $isAdmin = $role === 'admin' || $role === 'operator';
                     <i class="fas fa-users me-2"></i><span>Petugas</span>
                 </a>
             </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'pml-report' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=pml-report">
+                    <i class="fas fa-clipboard-list me-2"></i><span>Laporan PML</span>
+                </a>
+            </li>
             <?php endif; ?>
 
             <?php if ($isAdmin): ?>

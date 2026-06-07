@@ -1,9 +1,17 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0 fw-bold"><i class="fas fa-people-carry-box me-2"></i>Petugas Lapangan (PCL/PML/TF)</h5>
     <div class="d-flex gap-2">
-        <a href="?page=dashboard&sub=petugas-lapangan&action=template" class="btn btn-outline-success btn-sm">
-            <i class="fas fa-download me-1"></i>Template
-        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-download me-1"></i>Download Data
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                <li><a class="dropdown-item small" href="?page=dashboard&sub=petugas-lapangan&action=download&role=pcl"><i class="fas fa-user-tag me-2 text-success"></i>Data PCL (Pencacah)</a></li>
+                <li><a class="dropdown-item small" href="?page=dashboard&sub=petugas-lapangan&action=download&role=pml"><i class="fas fa-user-shield me-2 text-warning"></i>Data PML (Pemeriksa)</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item small" href="?page=dashboard&sub=petugas-lapangan&action=template"><i class="fas fa-file-excel me-2 text-muted"></i>Template Import</a></li>
+            </ul>
+        </div>
         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
             <i class="fas fa-file-excel me-1"></i>Import Excel
         </button>
@@ -102,7 +110,7 @@
                     <tr>
                         <th class="text-center" style="width:40px">No</th>
                         <th>Nama Lengkap</th>
-                        <th>Username</th>
+                        <th>ID Sobat / NIP</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
@@ -113,9 +121,9 @@
                 <tbody>
                     <?php foreach ($users as $u): ?>
                     <tr>
-                        <td class="text-center text-muted"></td>
+                        <td class="text-center text-muted">0</td>
                         <td class="fw-semibold"><?= htmlspecialchars($u['nama_lengkap'] ?: $u['username']) ?></td>
-                        <td><?= htmlspecialchars($u['username']) ?></td>
+                        <td><code class="small"><?= htmlspecialchars($u['id_sobat'] ?: $u['nik'] ?: '-') ?></code></td>
                         <td><?= htmlspecialchars($u['email'] ?? '-') ?></td>
                         <td>
                             <span class="badge bg-<?= $u['role'] === 'pml' ? 'warning text-dark' : ($u['role'] === 'pcl' ? 'success' : 'info') ?>">

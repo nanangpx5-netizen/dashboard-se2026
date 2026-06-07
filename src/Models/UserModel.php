@@ -21,15 +21,19 @@ class UserModel
 
     public function getUsers(array $roles, ?string $roleFilter = null): array
     {
-        $placeholders = implode(',', array_fill(0, count($roles), '?'));
-        $params = $roles;
-        $sql = "SELECT id, email, username, nama_lengkap, role, status_akun,
-                       kecamatan_tugas, last_login_at, created_at
-                FROM users WHERE role IN ({$placeholders})";
         if ($roleFilter && in_array($roleFilter, $roles, true)) {
-            $sql .= ' AND role = ?';
-            $params[] = $roleFilter;
+            $sql = "SELECT id, email, username, nama_lengkap, role, status_akun,
+                           id_sobat, nik, kecamatan_tugas, last_login_at, created_at
+                    FROM users WHERE role = ?";
+            $params = [$roleFilter];
+        } else {
+            $placeholders = implode(',', array_fill(0, count($roles), '?'));
+            $sql = "SELECT id, email, username, nama_lengkap, role, status_akun,
+                           id_sobat, nik, kecamatan_tugas, last_login_at, created_at
+                    FROM users WHERE role IN ({$placeholders})";
+            $params = $roles;
         }
+
         $sql .= ' ORDER BY role, id';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

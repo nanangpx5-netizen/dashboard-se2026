@@ -69,7 +69,7 @@ class AssignmentController extends Controller
             $this->data['kecamatan_scope'] = $this->getKecamatanScope();
 
             $pageNum        = max(1, (int) ($_GET['hal'] ?? 1));
-            $perPage        = max(10, min(100, (int) ($_GET['per_page'] ?? 25)));
+            $perPage        = max(10, min(100, (int) ($_GET['per_page'] ?? 10)));
             $tab            = $_GET['tab'] ?? 'unassigned';
 
             $totalAssigned   = $this->model->countAll($filters);
@@ -95,6 +95,11 @@ class AssignmentController extends Controller
             $petugas     = $this->model->getPetugas();
             $summary     = $this->model->countSummary();
             $petugasLoad = $this->model->getPetugasLoad();
+            $nonSlsData  = $this->model->getNonSlsPaginated($pageNum, $perPage);
+            $totalNonSls = $this->model->countNonSls();
+            $totalRowsNonSls = $totalNonSls;
+            $totalPagesNonSls = max(1, (int) ceil($totalNonSls / $perPage));
+            $pageNumNonSls = min($pageNum, $totalPagesNonSls);
             $desaList    = $filters['kdkec']
                 ? $this->model->getDesa($filters['kdkec'])
                 : [];
@@ -110,26 +115,29 @@ class AssignmentController extends Controller
 
             $this->data['page_title'] = 'Assignment Petugas';
             $this->render('assignment/index', [
-                'assignments'     => $assignments,
-                'unassigned'      => $unassigned,
-                'page_num'        => $pageNum,
-                'per_page'        => $perPage,
-                'total_pages'     => $totalPages,
-                'total_rows'      => $totalRows,
-                'total_assigned'  => $totalAssigned,
+                'assignments'      => $assignments,
+                'unassigned'       => $unassigned,
+                'non_sls_data'     => $nonSlsData,
+                'page_num'         => $pageNum,
+                'per_page'         => $perPage,
+                'total_pages'      => $totalPages,
+                'total_rows'       => $totalRows,
+                'total_assigned'   => $totalAssigned,
                 'total_unassigned' => $totalUnassigned,
-                'tab'             => $tab,
-                'kecamatan'       => $kecamatan,
-                'desa_list'       => $desaList,
-                'petugas'         => $petugas,
-                'pcl_list'        => $allPCL,
-                'pml_list'        => $allPML,
-                'tf_list'         => $allTF,
-                'summary'         => $summary,
-                'petugas_load'    => $petugasLoad,
-                'filters'         => $filters,
-                'import_preview'  => $importPreview,
-                'js'              => ['assignment'],
+                'total_non_sls'    => $totalNonSls,
+                'total_pages_non_sls' => $totalPagesNonSls,
+                'tab'              => $tab,
+                'kecamatan'        => $kecamatan,
+                'desa_list'        => $desaList,
+                'petugas'          => $petugas,
+                'pcl_list'         => $allPCL,
+                'pml_list'         => $allPML,
+                'tf_list'          => $allTF,
+                'summary'          => $summary,
+                'petugas_load'     => $petugasLoad,
+                'filters'          => $filters,
+                'import_preview'   => $importPreview,
+                'js'               => ['assignment'],
             ]);
             return;
         }
@@ -481,14 +489,15 @@ class AssignmentController extends Controller
     private function handleDownload(): void
     {
         $kdkec = $_GET['kdkec'] ?? '';
-        $rows = $this->model->getSlsForDownload($kdkec);
+        $slsRows = $this->model->getSlsForDownload($kdkec);
+        $nonSlsRows = $this->model->getNonSlsForDownload();
 
         $importDir = dirname(__DIR__, 2) . '/storage/import';
         if (!is_dir($importDir)) {
             mkdir($importDir, 0755, true);
         }
 
-        $kecLabel = $kdkec !== '' ? $rows[0]['nmkec'] ?? $kdkec : 'kabupaten';
+        $kecLabel = $kdkec !== '' ? ($slsRows[0]['nmkec'] ?? $kdkec) : 'kabupaten';
         $fileName = "sls_{$kecLabel}_" . date('Ymd') . '.xlsx';
         $tempFile = $importDir . '/' . $fileName;
 
@@ -496,12 +505,12 @@ class AssignmentController extends Controller
         $options->setTempFolder($importDir);
         $writer = new Writer($options);
         $writer->openToFile($tempFile);
-        $writer->addRow(Row::fromValues(['No', 'SLS', 'Desa', 'Kecamatan', 'Ketua SLS', 'KK', 'BTT', 'Usaha', 'Muatan']));
+        $writer->addRow(Row::fromValues(['No', 'ID SLS', 'Jenis', 'SLS', 'Desa', 'Kecamatan', 'Ketua SLS', 'KK', 'BTT', 'Usaha', 'Muatan', 'Subsektor', 'KK Baru', 'Usaha Wilker']));
 
         $no = 1;
-        foreach ($rows as $r) {
+        foreach ($slsRows as $r) {
             $writer->addRow(Row::fromValues([
-                $no++,
+                $no++, $r['idsubsls'] ?? '-', 'SLS',
                 $r['nmsls'],
                 $r['nmdesa'],
                 $r['nmkec'],
@@ -510,6 +519,25 @@ class AssignmentController extends Controller
                 $r['btt'] ?? 0,
                 $r['usaha'] ?? 0,
                 $r['muatan'] ?? 0,
+                $r['subsektor_st2023'] ?? 0,
+                $r['jml_kk'] ?? 0,
+                $r['usaha_wilkerstat'] ?? 0,
+            ]));
+        }
+        foreach ($nonSlsRows as $r) {
+            $writer->addRow(Row::fromValues([
+                $no++, $r['idsubsls'] ?? '-', 'Non-SLS',
+                $r['nmsls'],
+                $r['nmdesa'],
+                $r['nmkec'],
+                $r['nama_ketua'] ?? '-',
+                $r['kk'] ?? 0,
+                0,
+                $r['usaha'] ?? 0,
+                $r['muatan'] ?? 0,
+                $r['subsektor_st2023'] ?? 0,
+                $r['jml_kk'] ?? 0,
+                $r['usaha_wilkerstat'] ?? 0,
             ]));
         }
 
@@ -525,6 +553,7 @@ class AssignmentController extends Controller
         exit;
     }
 
+
     private function downloadTemplate(): void
     {
         $importDir = dirname(__DIR__, 2) . '/storage/import';
@@ -532,7 +561,7 @@ class AssignmentController extends Controller
             mkdir($importDir, 0755, true);
         }
         $tempFile = $importDir . '/template_import_assignment.xlsx';
-        $headers  = ['nmsls', 'nmdesa', 'nmkec', 'pcl', 'pml', 'task_force'];
+        $headers  = ['idsubsls', 'nmsls', 'nmdesa', 'nmkec', 'pcl', 'pml', 'task_force', 'subsektor_st2023', 'jml_kk', 'usaha_wilkerstat'];
 
         $options = new Options();
         $options->setTempFolder($importDir);
@@ -551,12 +580,16 @@ class AssignmentController extends Controller
                 $slsList = $this->model->getSlsByDesa($desa['kddesa'], 2);
                 foreach ($slsList as $row) {
                     $writer->addRow(Row::fromValues([
+                        $row['idsubsls'] ?? '',
                         $row['nmsls'],
                         $desa['nmdesa'],
                         $kec['nmkec'],
                         '',
                         '',
                         '',
+                        $row['subsektor_st2023'] ?? 0,
+                        $row['jml_kk'] ?? 0,
+                        $row['usaha_wilkerstat'] ?? 0,
                     ]));
                     $sampleRows++;
                     if ($sampleRows >= 10) break 3;
@@ -565,7 +598,7 @@ class AssignmentController extends Controller
         }
 
         if (!empty($petugas)) {
-            $writer->addRow(Row::fromValues(['', '', '', '— isi username petugas —', '— isi username petugas —', '— isi username petugas —']));
+            $writer->addRow(Row::fromValues(['', '', '', '— isi email petugas —', '— isi email petugas —', '— isi email petugas —']));
         }
 
         $writer->close();

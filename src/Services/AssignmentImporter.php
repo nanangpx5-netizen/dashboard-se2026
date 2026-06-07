@@ -10,12 +10,15 @@ class AssignmentImporter
     private \PDO $pdo;
 
     private const HEADER_MAP = [
-        'pcl'         => ['pcl', 'pencacah', 'username_pcl', 'pcl_username', 'petugas_pcl'],
-        'pml'         => ['pml', 'pengawas', 'username_pml', 'pml_username', 'petugas_pml'],
-        'task_force'  => ['task_force', 'tf', 'tugas_khusus', 'username_tf', 'tf_username'],
-        'nmsls'       => ['nmsls', 'nama_sls', 'sls', 'nama_sls_rw', 'nama_blok_sensus'],
-        'nmdesa'      => ['nmdesa', 'desa', 'nama_desa', 'desa_kelurahan'],
-        'nmkec'      => ['nmkec', 'kecamatan', 'nama_kecamatan', 'kec'],
+        'pcl'               => ['pcl', 'pencacah', 'username_pcl', 'pcl_username', 'petugas_pcl'],
+        'pml'               => ['pml', 'pengawas', 'username_pml', 'pml_username', 'petugas_pml'],
+        'task_force'        => ['task_force', 'tf', 'tugas_khusus', 'username_tf', 'tf_username'],
+        'nmsls'             => ['nmsls', 'nama_sls', 'sls', 'nama_sls_rw', 'nama_blok_sensus'],
+        'nmdesa'            => ['nmdesa', 'desa', 'nama_desa', 'desa_kelurahan'],
+        'nmkec'             => ['nmkec', 'kecamatan', 'nama_kecamatan', 'kec'],
+        'subsektor_st2023'  => ['subsektor_st2023', 'subsektor', 'subsektor_st', 'subsektor_st_2023'],
+        'jml_kk'            => ['jml_kk', 'jumlah_kk', 'kk_baru', 'jml_kepala_keluarga'],
+        'usaha_wilkerstat'  => ['usaha_wilkerstat', 'usaha', 'wilkerstat', 'usaha_wilker'],
     ];
 
     public function __construct()
@@ -140,6 +143,28 @@ class AssignmentImporter
                         continue;
                     }
 
+                    // Update muatan baru jika ada
+                    $updates = [];
+                    $params = [];
+                    if (isset($mapping['subsektor_st2023'])) {
+                        $updates[] = "subsektor_st2023 = ?";
+                        $params[] = (int) $data['subsektor_st2023'];
+                    }
+                    if (isset($mapping['jml_kk'])) {
+                        $updates[] = "jml_kk = ?";
+                        $params[] = (int) $data['jml_kk'];
+                    }
+                    if (isset($mapping['usaha_wilkerstat'])) {
+                        $updates[] = "usaha_wilkerstat = ?";
+                        $params[] = (int) $data['usaha_wilkerstat'];
+                    }
+
+                    if (!empty($updates)) {
+                        $sql = "UPDATE sipw_import SET " . implode(', ', $updates) . " WHERE id = ?";
+                        $params[] = (int) $sls['id'];
+                        $this->pdo->prepare($sql)->execute($params);
+                    }
+
                     $exists = $this->assignmentExists((int) $sls['id']);
                     if ($exists) {
                         $stmt = $this->pdo->prepare("UPDATE sipw_assignment SET pencacah_id = ?, pengawas_id = ?, task_force_id = ?, updated_at = NOW() WHERE sipw_id = ?");
@@ -211,10 +236,10 @@ class AssignmentImporter
         return $stmt->fetch() ?: null;
     }
 
-    private function findPetugas(string $username): ?int
+    private function findPetugas(string $email): ?int
     {
-        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE username = ? AND status_akun = 'active' LIMIT 1");
-        $stmt->execute([$username]);
+        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ? AND status_akun = 'active' LIMIT 1");
+        $stmt->execute([$email]);
         $r = $stmt->fetch();
         return $r ? (int) $r['id'] : null;
     }
