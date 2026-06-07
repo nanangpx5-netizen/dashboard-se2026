@@ -57,7 +57,7 @@ if [ -z "$ENV_PATH" ]; then
 fi
 
 echo "Menggunakan env: $ENV_PATH"
-source <(grep -E '^DB_' "$ENV_PATH" | sed 's/ //g')
+eval "$(grep -E '^DB_' "$ENV_PATH" | sed 's/ //g')"
 
 DB_NAME="${DB_DATABASE:-$DB_NAME}"
 DB_USER="${DB_USERNAME:-$DB_USER}"
