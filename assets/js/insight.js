@@ -186,19 +186,19 @@
     function loadAnomaliDetail(type) {
         const tbody = document.querySelector('#tblAnomali tbody');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Memuat...</td></tr>';
+        UI.showLoadingRow(tbody, 6, 'Memuat...');
         fetch(`?page=dashboard&sub=insight&action=anomali-detail&type=${type}&limit=100`, { credentials: 'same-origin' })
             .then(r => r.json())
             .then(json => {
                 if (!json.success || !json.data || json.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada data</td></tr>';
+                    UI.showEmptyRow(tbody, 6, 'Tidak ada data');
                     return;
                 }
                 const max = Math.max(...json.data.map(r => +r.muatan || 0));
                 tbody.innerHTML = json.data.map(r => {
                     const muColor = r.muatan == 0 ? 'text-danger fw-bold' : (r.muatan > 200 ? 'text-warning fw-bold' : '');
                     return `<tr>
-                        <td>${r.kdkec}</td>
+                        <td>${escapeHtml(r.kdkec)}</td>
                         <td>${escapeHtml((r.nmsls || r.idsubsls || '').substring(0, 30))}</td>
                         <td class="text-end">${(+r.kk || 0).toLocaleString('id')}</td>
                         <td class="text-end ${muColor}">${(+r.muatan || 0).toLocaleString('id')}</td>
@@ -208,7 +208,7 @@
                 }).join('');
             })
             .catch(err => {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">Error: ${escapeHtml(err.message)}</td></tr>`;
             });
     }
 
@@ -298,8 +298,8 @@
                                     }
                                     return '<tr' + cls + '>' +
                                         '<td>' + r.sub_ke + '</td>' +
-                                        '<td><code>' + r.idsubsls + '</code></td>' +
-                                        '<td>' + r.id + '</td>' +
+                                        '<td><code>' + escapeHtml(r.idsubsls) + '</code></td>' +
+                                        '<td>' + escapeHtml(String(r.id)) + '</td>' +
                                         '<td class="text-end">' + (+r.kk).toLocaleString('id') + '</td>' +
                                         '<td class="text-end">' + (+r.muatan).toLocaleString('id') + '</td>' +
                                         '<td class="text-end">' + (+r.btt).toLocaleString('id') + '</td>' +

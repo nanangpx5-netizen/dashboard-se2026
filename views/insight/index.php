@@ -34,8 +34,8 @@ $userJson   = json_encode($user_pool, JSON_HEX_TAG | JSON_HEX_AMP);
                     <div class="alert alert-<?= htmlspecialchars($r['level']) ?> py-2 px-3 mb-2 d-flex align-items-start gap-2">
                         <i class="fas <?= htmlspecialchars($r['icon']) ?> mt-1"></i>
                         <div class="flex-grow-1">
-                            <strong class="d-block"><?= $r['title'] ?></strong>
-                            <small><?= $r['desc'] ?></small>
+                            <strong class="d-block"><?= e($r['title']) ?></strong>
+                            <small><?= e($r['desc']) ?></small>
                         </div>
                     </div>
                 </div>

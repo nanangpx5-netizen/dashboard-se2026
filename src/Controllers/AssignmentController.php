@@ -7,6 +7,7 @@ use App\Core\Database;
 use App\Helpers\Backup;
 use App\Helpers\Cache;
 use App\Helpers\Session;
+use App\Helpers\Validator;
 use App\Models\AssignmentModel;
 use App\Services\AssignmentImporter;
 use OpenSpout\Common\Entity\Row;
@@ -160,16 +161,24 @@ class AssignmentController extends Controller
      */
     private function handleAssign(): void
     {
-        $sipwId      = (int) ($_POST['sipw_id'] ?? 0);
-        $pencacahId  = $this->intOrNull($_POST['pencacah_id'] ?? null);
-        $pengawasId  = $this->intOrNull($_POST['pengawas_id'] ?? null);
-        $taskForceId = $this->intOrNull($_POST['task_force_id'] ?? null);
+        $validator = new Validator();
+        $valid = $validator->validate($_POST, [
+            'sipw_id'       => 'required|int',
+            'pencacah_id'   => 'int',
+            'pengawas_id'   => 'int',
+            'task_force_id' => 'int',
+        ]);
 
-        if ($sipwId <= 0) {
-            Session::flash('error', 'SLS tidak valid.');
+        if ($validator->hasErrors()) {
+            Session::flash('error', $validator->firstError());
             $this->redirect('?page=dashboard&sub=assignment');
             return;
         }
+
+        $sipwId      = (int) ($valid['sipw_id'] ?? 0);
+        $pencacahId  = !empty($valid['pencacah_id']) ? (int) $valid['pencacah_id'] : null;
+        $pengawasId  = !empty($valid['pengawas_id']) ? (int) $valid['pengawas_id'] : null;
+        $taskForceId = !empty($valid['task_force_id']) ? (int) $valid['task_force_id'] : null;
 
         $isUpdate = $this->model->exists($sipwId);
         $oldData = $isUpdate ? $this->model->findBySipwId($sipwId) : null;
@@ -209,16 +218,24 @@ class AssignmentController extends Controller
      */
     private function handleEdit(): void
     {
-        $sipwId      = (int) ($_POST['sipw_id'] ?? 0);
-        $pencacahId  = $this->intOrNull($_POST['pencacah_id'] ?? null);
-        $pengawasId  = $this->intOrNull($_POST['pengawas_id'] ?? null);
-        $taskForceId = $this->intOrNull($_POST['task_force_id'] ?? null);
+        $validator = new Validator();
+        $valid = $validator->validate($_POST, [
+            'sipw_id'       => 'required|int',
+            'pencacah_id'   => 'int',
+            'pengawas_id'   => 'int',
+            'task_force_id' => 'int',
+        ]);
 
-        if ($sipwId <= 0) {
-            Session::flash('error', 'SLS tidak valid.');
+        if ($validator->hasErrors()) {
+            Session::flash('error', $validator->firstError());
             $this->redirect('?page=dashboard&sub=assignment');
             return;
         }
+
+        $sipwId      = (int) ($valid['sipw_id'] ?? 0);
+        $pencacahId  = !empty($valid['pencacah_id']) ? (int) $valid['pencacah_id'] : null;
+        $pengawasId  = !empty($valid['pengawas_id']) ? (int) $valid['pengawas_id'] : null;
+        $taskForceId = !empty($valid['task_force_id']) ? (int) $valid['task_force_id'] : null;
 
         $oldData = $this->model->findBySipwId($sipwId);
         $this->model->update($sipwId, $pencacahId, $pengawasId, $taskForceId);
@@ -272,16 +289,24 @@ class AssignmentController extends Controller
 
     private function handleBulk(): void
     {
-        $kdkec       = $_POST['kdkec'] ?? '';
-        $pencacahId  = $this->intOrNull($_POST['pencacah_id'] ?? null);
-        $pengawasId  = $this->intOrNull($_POST['pengawas_id'] ?? null);
-        $taskForceId = $this->intOrNull($_POST['task_force_id'] ?? null);
+        $validator = new Validator();
+        $valid = $validator->validate($_POST, [
+            'kdkec'         => 'required|string|strip_tags',
+            'pencacah_id'   => 'int',
+            'pengawas_id'   => 'int',
+            'task_force_id' => 'int',
+        ]);
 
-        if (empty($kdkec)) {
-            Session::flash('error', 'Pilih kecamatan terlebih dahulu.');
+        if ($validator->hasErrors()) {
+            Session::flash('error', $validator->firstError());
             $this->redirect('?page=dashboard&sub=assignment');
             return;
         }
+
+        $kdkec       = $valid['kdkec'] ?? '';
+        $pencacahId  = !empty($valid['pencacah_id']) ? (int) $valid['pencacah_id'] : null;
+        $pengawasId  = !empty($valid['pengawas_id']) ? (int) $valid['pengawas_id'] : null;
+        $taskForceId = !empty($valid['task_force_id']) ? (int) $valid['task_force_id'] : null;
 
         try {
             $count = $this->model->bulkAssign($kdkec, $pencacahId, $pengawasId, $taskForceId);

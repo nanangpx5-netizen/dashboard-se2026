@@ -57,7 +57,7 @@ function renderImportPagination(int $page, int $totalPages, int $perPage): void
             <?php if ($type !== 'info' && $type !== 'warning'): ?>
                 <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : 'check-circle' ?> me-1"></i>
             <?php endif; ?>
-            <?= $flash[$type] ?>
+            <?= e($flash[$type]) ?>
             <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
         </div>
     <?php endforeach; ?>

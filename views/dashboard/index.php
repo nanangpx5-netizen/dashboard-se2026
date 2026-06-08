@@ -832,7 +832,7 @@ $totalAnomali = ($prelist_anomali_summary['sls_kk_0'] ?? 0)
     </div>
 </div>
 <script>
-var mapKecamatan = <?= json_encode($prelist_map_kec, JSON_UNESCAPED_UNICODE) ?>;
+var mapKecamatan = <?= json_encode($prelist_map_kec, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
 <?php endif; ?>
 
@@ -853,10 +853,10 @@ var mapKecamatan = <?= json_encode($prelist_map_kec, JSON_UNESCAPED_UNICODE) ?>;
 <script>
 var chartData = {
     muatan: {
-        labels: <?= json_encode(array_column($muatan_per_kec, 'label')) ?>,
+        labels: <?= json_encode(array_column($muatan_per_kec, 'label'), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         datasets: [{
             label: 'Muatan',
-            data: <?= json_encode(array_map('intval', array_column($muatan_per_kec, 'total_muatan'))) ?>,
+            data: <?= json_encode(array_map('intval', array_column($muatan_per_kec, 'total_muatan')), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
             backgroundColor: 'rgba(244, 123, 32, 0.7)',
             borderColor: 'rgba(244, 123, 32, 1)',
             borderWidth: 1,
@@ -881,10 +881,10 @@ var chartData = {
         ],
     },
     bebanPencacah: {
-        labels: <?= json_encode(array_column($beban_pencacah, 'username')) ?>,
+        labels: <?= json_encode(array_column($beban_pencacah, 'username'), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         datasets: [{
             label: 'Total Assign',
-            data: <?= json_encode(array_map('intval', array_column($beban_pencacah, 'total_assign'))) ?>,
+            data: <?= json_encode(array_map('intval', array_column($beban_pencacah, 'total_assign')), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
             backgroundColor: [
                 'rgba(25, 135, 84, 0.8)',
                 'rgba(244, 123, 32, 0.8)',
@@ -897,15 +897,15 @@ var chartData = {
         }]
     },
     progress: {
-        labels: <?= json_encode(array_column($progress_wilayah, 'label')) ?>,
-        proses: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'proses'))) ?>,
-        selesai: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'selesai'))) ?>,
+        labels: <?= json_encode(array_column($progress_wilayah, 'label'), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        proses: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'proses')), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        selesai: <?= json_encode(array_map('intval', array_column($progress_wilayah, 'selesai')), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
     },
     prelist: <?php if ($prelist_imported && !empty($prelist_perbandingan)): ?>{
         perbandingan: {
-            labels: <?= json_encode(array_reverse(array_column($prelist_perbandingan, 'nm_kabkota'))) ?>,
-            se2016: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2016')))) ?>,
-            se2026: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2026')))) ?>,
+            labels: <?= json_encode(array_reverse(array_column($prelist_perbandingan, 'nm_kabkota')), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+            se2016: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2016'))), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+            se2026: <?= json_encode(array_reverse(array_map('intval', array_column($prelist_perbandingan, 'se2026'))), JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         },
         komposisi: {
             labels: ['Usaha Besar (UB)', 'Usaha Menengah (UM)', 'Usaha Mikro Kecil (UMK)'],

@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Helpers\Asset;
 use App\Helpers\Session;
 use App\Helpers\Security;
 
@@ -28,6 +29,8 @@ abstract class Controller
         $this->data['page_title']   = 'Dashboard SE2026';
         $this->data['page']         = $this->request->page();
         $this->data['sub']          = $this->request->sub();
+
+        Asset::init(BASE_URL);
     }
 
     protected function render(string $view, array $data = []): void

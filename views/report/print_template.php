@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title><?= $title ?> — <?= $jenisTitle ?></title>
+    <title><?= e($title) ?> — <?= e($jenisTitle) ?></title>
     <style>
         @page { margin: 20mm 15mm; }
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #222; line-height: 1.4; }
@@ -44,9 +44,9 @@
 <body>
 
 <div class="header">
-    <h1><?= $title ?></h1>
-    <h2><?= $subtitle ?></h2>
-    <div class="meta"><?= $jenisTitle ?> — Dicetak: <?= $tglCetak ?></div>
+    <h1><?= e($title) ?></h1>
+    <h2><?= e($subtitle) ?></h2>
+    <div class="meta"><?= e($jenisTitle) ?> — Dicetak: <?= e($tglCetak) ?></div>
 </div>
 
 <?php if ($jenis === 'snapshot'): ?>
@@ -125,7 +125,7 @@
     <table>
         <thead>
             <tr>
-                <th>No</th><th>Nama <?= $label ?></th><th>Total SLS</th><th>Selesai</th><th>Proses</th><th>Belum</th>
+                <th>No</th><th>Nama <?= e($label) ?></th><th>Total SLS</th><th>Selesai</th><th>Proses</th><th>Belum</th>
                 <th>KK</th><th>Usaha</th><th>Muatan</th><th>Wilayah</th>
             </tr>
         </thead>
@@ -191,7 +191,7 @@
 </div>
 
 <div class="footer">
-    Laporan ini dihasilkan secara otomatis dari Dashboard SE2026 BPS Jember — <?= $tglCetak ?>
+    Laporan ini dihasilkan secara otomatis dari Dashboard SE2026 BPS Jember — <?= e($tglCetak) ?>
 </div>
 
 </body>

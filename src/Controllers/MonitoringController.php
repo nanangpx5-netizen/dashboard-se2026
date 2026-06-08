@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Response;
+use App\Helpers\Validator;
 use App\Models\MonitoringModel;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
@@ -54,6 +55,14 @@ class MonitoringController extends Controller
             $kdkec = substr($scope, -3);
         }
 
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec' => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+        ]);
+        if ($scope === null && !empty($valid['kdkec'])) {
+            $kdkec = $valid['kdkec'];
+        }
+
         $summary   = $this->model->getSummary();
         $kecamatan = $this->model->getKecamatan();
         $petugas   = $this->model->getPetugasLists();
@@ -83,8 +92,12 @@ class MonitoringController extends Controller
      */
     private function kecamatanSummary(): void
     {
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec' => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+        ]);
         $filters = $this->applyKecamatanScope([
-            'kdkec' => $_GET['kdkec'] ?? '',
+            'kdkec' => $valid['kdkec'] ?? '',
         ]);
         $data = $this->model->getKecamatanSummary($filters);
         $this->json(['success' => true, 'data' => $data]);
@@ -95,63 +108,17 @@ class MonitoringController extends Controller
      */
     private function desaSummary(): void
     {
-        $kdkec = $this->getKecamatanScope() ?? ($_GET['kdkec'] ?? '');
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec' => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+        ]);
+        $kdkec = $this->getKecamatanScope() ?? ($valid['kdkec'] ?? '');
         if ($kdkec === '') {
             $this->json(['success' => false, 'message' => 'Parameter kdkec wajib']);
             return;
         }
         $data = $this->model->getDesaSummary($kdkec);
         $this->json(['success' => true, 'data' => $data]);
-    }
-
-    /**
-     * AJAX JSON: DataTables format untuk assigned SLS
-     */
-    private function slsData(): void
-    {
-        $draw   = (int) ($_GET['draw'] ?? 0);
-        $start  = (int) ($_GET['start'] ?? 0);
-        $length = (int) ($_GET['length'] ?? 25);
-
-        $filters = $this->applyKecamatanScope([
-            'kdkec'      => $_GET['kdkec'] ?? '',
-            'kddesa'     => $_GET['kddesa'] ?? '',
-            'pencacah'   => $_GET['pencacah'] ?? '',
-            'pengawas'   => $_GET['pengawas'] ?? '',
-            'task_force' => $_GET['task_force'] ?? '',
-            'status'     => $_GET['status'] ?? '',
-            'search'     => $_GET['search']['value'] ?? '',
-        ]);
-
-        $recordsTotal    = $this->model->countSlsAssigned($filters);
-        $recordsFiltered = $recordsTotal;
-        $data            = $this->model->getSlsAssigned($filters, $start, $length);
-
-        $rows = [];
-        foreach ($data as $r) {
-            $rows[] = [
-                'id'          => $r['id'],
-                'nmkec'       => htmlspecialchars($r['nmkec']),
-                'nmdesa'      => htmlspecialchars($r['nmdesa']),
-                'nmsls'       => htmlspecialchars($r['nmsls']),
-                'kk'          => (int) $r['kk'],
-                'usaha'       => (int) $r['usaha'],
-                'muatan'      => (int) $r['muatan'],
-                'pencacah'    => htmlspecialchars($r['pencacah']),
-                'pengawas'    => htmlspecialchars($r['pengawas']),
-                'task_force'  => htmlspecialchars($r['task_force']),
-                'status'      => $r['status'],
-                'status_badge' => $this->statusBadge($r['status']),
-                'tgl_assign'  => $r['tgl_assign'] ?? '-',
-            ];
-        }
-
-        $this->json([
-            'draw'            => $draw,
-            'recordsTotal'    => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data'            => $rows,
-        ]);
     }
 
     /**
@@ -164,10 +131,16 @@ class MonitoringController extends Controller
         $length = (int) ($_GET['length'] ?? 25);
         $search = $_GET['search']['value'] ?? '';
 
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec'  => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+            'kddesa' => 'string|trim|regex:/^[0-9]{0,10}$/',
+            'search' => 'string|trim',
+        ]);
         $filters = $this->applyKecamatanScope([
-            'kdkec'  => $_GET['kdkec'] ?? '',
-            'kddesa' => $_GET['kddesa'] ?? '',
-            'search' => $search,
+            'kdkec'  => $valid['kdkec'] ?? '',
+            'kddesa' => $valid['kddesa'] ?? '',
+            'search' => $valid['search'] ?? $search,
         ]);
 
         $recordsTotal    = $this->model->countSlsData($filters);
@@ -212,10 +185,16 @@ class MonitoringController extends Controller
         $length = (int) ($_GET['length'] ?? 25);
         $search = $_GET['search']['value'] ?? '';
 
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec'  => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+            'kddesa' => 'string|trim|regex:/^[0-9]{0,10}$/',
+            'search' => 'string|trim',
+        ]);
         $filters = $this->applyKecamatanScope([
-            'kdkec'  => $_GET['kdkec'] ?? '',
-            'kddesa' => $_GET['kddesa'] ?? '',
-            'search' => $search,
+            'kdkec'  => $valid['kdkec'] ?? '',
+            'kddesa' => $valid['kddesa'] ?? '',
+            'search' => $valid['search'] ?? $search,
         ]);
 
         $recordsTotal    = $this->model->countNonSlsData($filters);
@@ -362,7 +341,11 @@ class MonitoringController extends Controller
      */
     private function filterDropdowns(): void
     {
-        $kdkec = $this->getKecamatanScope() ?? ($_GET['kdkec'] ?? '');
+        $validator = new Validator();
+        $valid = $validator->validate($_GET, [
+            'kdkec' => 'string|trim|regex:/^([0-9]{3}|[0-9]{7})?$/',
+        ]);
+        $kdkec = $this->getKecamatanScope() ?? ($valid['kdkec'] ?? '');
         if ($kdkec === '') {
             $this->json(['success' => false, 'message' => 'kdkec required']);
             return;

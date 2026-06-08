@@ -279,3 +279,89 @@ a.text-se2026:focus {
 .card-jatim {
     border-left: 4px solid var(--jatim-orange) !important;
 }
+
+/* ─── Loading States ──────────────────────────────────────────────── */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: inherit;
+    transition: opacity 0.2s;
+}
+.loading-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+.loading-spinner-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+.loading-spinner-sm::before {
+    content: '';
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #dee2e6;
+    border-top-color: var(--se2026-orange);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Empty States ────────────────────────────────────────────────── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #adb5bd;
+}
+.empty-state-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+.empty-state-text {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+.empty-state-sub {
+    font-size: 0.8rem;
+    color: #ced4da;
+}
+
+/* ─── Skeleton Screens ────────────────────────────────────────────── */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    display: inline-block;
+}
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton-text {
+    height: 0.8rem;
+    width: 100%;
+    margin-bottom: 0.4rem;
+}
+.skeleton-title {
+    height: 1.1rem;
+    width: 60%;
+    margin-bottom: 0.6rem;
+}
+.skeleton-sm {
+    height: 0.65rem;
+    width: 40%;
+}

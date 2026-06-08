@@ -7,11 +7,14 @@ use App\Core\Database;
 use App\Helpers\AuditLog;
 use App\Helpers\Session;
 use App\Helpers\Security;
+use App\Helpers\Validator;
 
 class AuthController extends Controller
 {
     private const MAX_LOGIN_ATTEMPTS = 5;
+    private const MAX_IP_ATTEMPTS = 10;
     private const LOCKOUT_MINUTES = 15;
+    private const IP_LOCKOUT_MINUTES = 30;
 
     public function loginForm(): void
     {
@@ -34,17 +37,24 @@ class AuthController extends Controller
             return;
         }
 
-        $username  = trim($_POST['username'] ?? '');
-        $password  = $_POST['password'] ?? '';
         $csrfToken = $_POST['csrf_token'] ?? '';
 
-        if (!Security::validateCsrf($csrfToken)) {
-            Session::flash('error', 'Token CSRF tidak valid. Refresh halaman dan coba lagi.');
+        $validator = new Validator();
+        $valid = $validator->validate($_POST, [
+            'username' => 'required|string|trim|strip_tags|min:3|max:100',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->hasErrors()) {
+            Session::flash('error', $validator->firstError());
             $this->redirect('?page=login');
         }
 
-        if (empty($username) || empty($password)) {
-            Session::flash('error', 'Username dan password wajib diisi.');
+        $username  = $valid['username'];
+        $password  = $valid['password'];
+
+        if (!Security::validateCsrf($csrfToken)) {
+            Session::flash('error', 'Token CSRF tidak valid. Refresh halaman dan coba lagi.');
             $this->redirect('?page=login');
         }
 
@@ -99,16 +109,23 @@ class AuthController extends Controller
     private function loginAjax(): void
     {
         $input = $this->request->jsonBody() ?? $_POST;
-        $username = trim($input['username'] ?? '');
-        $password = $input['password'] ?? '';
         $token = $input['csrf_token'] ?? '';
+
+        $validator = new Validator();
+        $valid = $validator->validate($input, [
+            'username' => 'required|string|trim|strip_tags|min:3|max:100',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->hasErrors()) {
+            $this->error($validator->firstError(), 422);
+        }
+
+        $username = $valid['username'];
+        $password = $valid['password'];
 
         if (!Security::validateCsrf($token)) {
             $this->error('Token CSRF tidak valid', 403);
-        }
-
-        if (empty($username) || empty($password)) {
-            $this->error('Username dan password wajib diisi', 422);
         }
 
         try {
@@ -208,6 +225,9 @@ class AuthController extends Controller
 
     private function isLockedOut(\PDO $pdo, string $username): bool
     {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+        // Per-username: max 5 attempts in 15 min
         $stmt = $pdo->prepare("
             SELECT COUNT(*) as cnt
             FROM activity_logs
@@ -216,17 +236,35 @@ class AuthController extends Controller
               AND created_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
         ");
         $stmt->execute([$username, self::LOCKOUT_MINUTES]);
-        return (int) $stmt->fetchColumn() >= self::MAX_LOGIN_ATTEMPTS;
+        if ((int) $stmt->fetchColumn() >= self::MAX_LOGIN_ATTEMPTS) {
+            return true;
+        }
+
+        // Per-IP: max 10 attempts in 30 min (brute-force protection)
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as cnt
+            FROM activity_logs
+            WHERE action = 'login_failed'
+              AND ip_address = ?
+              AND created_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        ");
+        $stmt->execute([$ip, self::IP_LOCKOUT_MINUTES]);
+        if ((int) $stmt->fetchColumn() >= self::MAX_IP_ATTEMPTS) {
+            return true;
+        }
+
+        return false;
     }
 
     private function recordFailedAttempt(\PDO $pdo, string $username): void
     {
         try {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
             $stmt = $pdo->prepare("
                 INSERT INTO activity_logs (user_id, action, module, detail, ip_address, created_at)
                 VALUES (NULL, 'login_failed', 'auth', ?, ?, NOW())
             ");
-            $stmt->execute([$username, $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0']);
+            $stmt->execute([$username, $ip]);
         } catch (\Throwable $e) {
             // Non-critical — login tetap berjalan
         }

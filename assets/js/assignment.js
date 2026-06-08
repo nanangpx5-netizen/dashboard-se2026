@@ -2,6 +2,11 @@
  * Assignment Module — UI interactions
  */
 
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 function initPetugasSelects(container) {
     container = container || document;
     var $container = $(container);
@@ -78,12 +83,12 @@ function loadSuggestions(kdkec, nmkec) {
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (!data.success) {
-                body.innerHTML = '<div class="text-danger small">Gagal: ' + (data.message || 'unknown') + '</div>';
+                body.innerHTML = '<div class="text-danger small">Gagal: ' + escHtml(data.message || 'unknown') + '</div>';
                 return;
             }
             badge.textContent = data.total + ' petugas';
             if (data.total === 0) {
-                body.innerHTML = '<div class="text-muted small">Tidak ada petugas dengan kecamatan_bertugas memuat "' + nmkec + '". Pilih manual dari dropdown di modal Assign.</div>';
+                body.innerHTML = '<div class="text-muted small">Tidak ada petugas dengan kecamatan_bertugas memuat "' + escHtml(nmkec) + '". Pilih manual dari dropdown di modal Assign.</div>';
                 return;
             }
             var labels = { 
@@ -108,9 +113,9 @@ function loadSuggestions(kdkec, nmkec) {
                     var loadBadge = u.current_load === 0
                         ? '<span class="badge bg-success bg-opacity-25 text-success">idle</span>'
                         : '<span class="badge bg-secondary">' + u.current_load + ' SLS</span>';
-                    var posTugas = u.posisi_tugas ? '<span class="d-block text-info" style="font-size:10px">Tugas: ' + u.posisi_tugas + '</span>' : '';
+                    var posTugas = u.posisi_tugas ? '<span class="d-block text-info" style="font-size:10px">Tugas: ' + escHtml(u.posisi_tugas) + '</span>' : '';
                     html += '<li class="d-flex justify-content-between align-items-center py-1 border-bottom">';
-                    html += '<span><i class="fas fa-user me-1 text-muted"></i>' + u.nama_lengkap + '<br><code class="small">' + u.username + '</code>' + posTugas + '</span>';
+                    html += '<span><i class="fas fa-user me-1 text-muted"></i>' + escHtml(u.nama_lengkap) + '<br><code class="small">' + escHtml(u.username) + '</code>' + posTugas + '</span>';
                     html += loadBadge;
                     html += '</li>';
                 });
@@ -120,7 +125,7 @@ function loadSuggestions(kdkec, nmkec) {
             body.innerHTML = html;
         })
         .catch(function (err) {
-            body.innerHTML = '<div class="text-danger small">Error: ' + err.message + '</div>';
+            body.innerHTML = '<div class="text-danger small">Error: ' + escHtml(err.message) + '</div>';
         });
 }
 

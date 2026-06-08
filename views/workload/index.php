@@ -164,6 +164,10 @@
 </div>
 
 <script>
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
 document.querySelectorAll('.btn-detail').forEach(function(btn) {
     btn.addEventListener('click', function() {
         var id = this.dataset.id;
@@ -197,13 +201,13 @@ document.querySelectorAll('.btn-detail').forEach(function(btn) {
                 res.data.forEach(function(d) {
                     var badge = d.status === 'selesai' ? 'success' : (d.status === 'proses' ? 'warning text-dark' : 'secondary');
                     html += '<tr>' +
-                        '<td>' + d.nmkec + '</td>' +
-                        '<td>' + d.nmdesa + '</td>' +
-                        '<td>' + d.nmsls + '</td>' +
+                        '<td>' + escHtml(d.nmkec) + '</td>' +
+                        '<td>' + escHtml(d.nmdesa) + '</td>' +
+                        '<td>' + escHtml(d.nmsls) + '</td>' +
                         '<td class="text-end">' + Number(d.kk).toLocaleString('id-ID') + '</td>' +
                         '<td class="text-end">' + Number(d.usaha).toLocaleString('id-ID') + '</td>' +
                         '<td class="text-end">' + Number(d.muatan).toLocaleString('id-ID') + '</td>' +
-                        '<td><span class="badge bg-' + badge + ' rounded-pill">' + d.status + '</span></td>' +
+                        '<td><span class="badge bg-' + badge + ' rounded-pill">' + escHtml(d.status) + '</span></td>' +
                         '</tr>';
                 });
                 document.querySelector('#detailTable tbody').innerHTML = html;
@@ -216,13 +220,12 @@ document.querySelectorAll('.btn-detail').forEach(function(btn) {
 });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function() {
     var ctx = document.getElementById('workloadChart');
     if (!ctx) return;
-    var labels = <?= $chartLabels ?: '[]' ?>;
-    var data   = <?= $chartMuatan ?: '[]' ?>;
+    var labels = <?= htmlspecialchars($chartLabels ?: '[]', ENT_QUOTES, 'UTF-8') ?>;
+    var data   = <?= htmlspecialchars($chartMuatan ?: '[]', ENT_QUOTES, 'UTF-8') ?>;
 
     if (labels.length === 0) {
         ctx.parentNode.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>Belum ada data untuk ditampilkan</div>';

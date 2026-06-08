@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 final class Session
 {
+    private const MAX_LIFETIME = 28800; // 8 hours absolute
+    private const IDLE_TIMEOUT = 7200;  // 2 hours idle
+
     public static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
-            $lifetime = (int) (Env::get('SESSION_LIFETIME', 7200));
+            $lifetime = (int) Env::get('SESSION_LIFETIME', 7200);
             session_set_cookie_params([
                 'lifetime' => $lifetime,
                 'path'     => '/',
@@ -20,7 +25,16 @@ final class Session
             if (self::has('_fingerprint') && !self::verifyFingerprint()) {
                 self::destroy();
                 self::start();
+                return;
             }
+
+            if (self::isExpired()) {
+                self::destroy();
+                self::start();
+                return;
+            }
+
+            self::updateActivity();
         }
     }
 
@@ -105,10 +119,46 @@ final class Session
         return hash_equals($stored, self::generateFingerprint());
     }
 
+    public static function isExpired(): bool
+    {
+        $started = self::get('_started');
+        if ($started && (time() - $started) > self::MAX_LIFETIME) {
+            return true;
+        }
+
+        $activity = self::get('_activity');
+        if ($activity && (time() - $activity) > self::IDLE_TIMEOUT) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function updateActivity(): void
+    {
+        if (!self::has('_started')) {
+            self::set('_started', time());
+        }
+        self::set('_activity', time());
+    }
+
+    public static function enforceRole(array $allowedRoles): void
+    {
+        $user = self::get('user');
+        $role = $user['role'] ?? '';
+
+        if (!in_array($role, $allowedRoles, true)) {
+            self::destroy();
+            self::start();
+        }
+    }
+
     private static function generateFingerprint(): string
     {
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        return hash('sha256', $ua . '|' . ip2long($ip));
+        $acceptLang = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        $secret = Env::get('APP_KEY', '') ?: 'se2026-default-key';
+        return hash_hmac('sha256', $ua . '|' . ip2long($ip) . '|' . $acceptLang, $secret);
     }
 }

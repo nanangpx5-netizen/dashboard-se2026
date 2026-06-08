@@ -1,18 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
-/**
- * Cache — simple file-based cache with TTL
- *
- * Gunakan untuk data agregat yang tidak berubah setiap detik
- * (dashboard stats, kecamatan list, dll).
- *
- * Struktur file: {CACHE_PATH}/{key}.cache — berisi serialized data + expiry.
- */
 final class Cache
 {
     private static string $dir;
+    private static int $gcProbability = 100;
+
+    private const GC_MAX_LIFETIME = 86400;
 
     private static function init(): void
     {
@@ -28,7 +25,14 @@ final class Cache
         $path = self::$dir . '/' . $key . '.cache';
         if (!is_file($path)) return $default;
 
-        $data = @file_get_contents($path);
+        $fh = @fopen($path, 'rb');
+        if (!$fh) return $default;
+
+        flock($fh, LOCK_SH);
+        $data = stream_get_contents($fh);
+        flock($fh, LOCK_UN);
+        fclose($fh);
+
         if ($data === false) return $default;
 
         $payload = @unserialize($data);
@@ -54,7 +58,15 @@ final class Cache
             'value'   => $value,
             'created' => time(),
         ]);
-        @file_put_contents($path, $payload, LOCK_EX);
+
+        $fh = @fopen($path, 'wb');
+        if (!$fh) return;
+
+        flock($fh, LOCK_EX);
+        fwrite($fh, $payload);
+        fflush($fh);
+        flock($fh, LOCK_UN);
+        fclose($fh);
     }
 
     public static function remember(string $key, int $ttlSeconds, callable $callback): mixed
@@ -81,5 +93,76 @@ final class Cache
         foreach ($files as $f) {
             @unlink($f);
         }
+    }
+
+    public static function gc(): array
+    {
+        self::init();
+        $stats = ['deleted' => 0, 'freed_bytes' => 0, 'remaining' => 0];
+
+        $files = glob(self::$dir . '/*.cache');
+        $now = time();
+
+        foreach ($files as $path) {
+            $mtime = @filemtime($path);
+            if ($mtime === false) continue;
+
+            if ($mtime < $now - self::GC_MAX_LIFETIME) {
+                $size = @filesize($path) ?: 0;
+                if (@unlink($path)) {
+                    $stats['deleted']++;
+                    $stats['freed_bytes'] += $size;
+                }
+                continue;
+            }
+
+            $fh = @fopen($path, 'rb');
+            if (!$fh) continue;
+
+            flock($fh, LOCK_SH);
+            $data = stream_get_contents($fh);
+            flock($fh, LOCK_UN);
+            fclose($fh);
+
+            if ($data === false) continue;
+
+            $payload = @unserialize($data);
+            if ($payload === false || !isset($payload['expires'])) {
+                $size = @filesize($path) ?: 0;
+                if (@unlink($path)) {
+                    $stats['deleted']++;
+                    $stats['freed_bytes'] += $size;
+                }
+            } elseif ($now > $payload['expires']) {
+                $size = @filesize($path) ?: 0;
+                if (@unlink($path)) {
+                    $stats['deleted']++;
+                    $stats['freed_bytes'] += $size;
+                }
+            } else {
+                $stats['remaining']++;
+            }
+        }
+
+        return $stats;
+    }
+
+    public static function setGcProbability(int $probability): void
+    {
+        self::$gcProbability = max(1, min(1000, $probability));
+    }
+
+    public static function maybeGc(): ?array
+    {
+        if (mt_rand(1, self::$gcProbability) === 1) {
+            return self::gc();
+        }
+        return null;
+    }
+
+    public static function dir(): string
+    {
+        self::init();
+        return self::$dir;
     }
 }

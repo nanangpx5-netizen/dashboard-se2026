@@ -75,32 +75,42 @@ final class App
 
     private function setErrorHandler(): void
     {
-        $debug = Env::get('APP_DEBUG', true);
+        $debug = Env::get('APP_DEBUG', false);
         $logDir = dirname(__DIR__, 2) . '/storage/logs';
 
         if (!is_dir($logDir)) {
             mkdir($logDir, 0755, true);
         }
 
+        self::rotateLogs($logDir);
+
         set_exception_handler(function (\Throwable $e) use ($logDir, $debug): void {
+            $errorId = strtoupper(bin2hex(random_bytes(4)));
             $logFile = $logDir . '/app-' . date('Y-m-d') . '.log';
-            $message = sprintf(
-                "[%s] %s: %s in %s:%d\n%s\n",
+
+            $safeMessage = $e->getMessage();
+            if ($e instanceof \PDOException) {
+                $safeMessage = 'Database error [' . $e->getCode() . ']';
+            }
+
+            error_log(sprintf(
+                "[%s] [ERR-%s] %s: %s in %s:%d\n%s\n",
                 date('Y-m-d H:i:s'),
+                $errorId,
                 get_class($e),
                 $e->getMessage(),
                 $e->getFile(),
                 $e->getLine(),
                 $e->getTraceAsString()
-            );
-            error_log($message, 3, $logFile);
+            ), 3, $logFile);
 
             if ($this->isAjax()) {
                 http_response_code(500);
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode([
                     'success' => false,
-                    'message' => $debug ? $e->getMessage() : 'Terjadi kesalahan server',
+                    'message' => $debug ? $safeMessage : 'Terjadi kesalahan server',
+                    'error_id' => $errorId,
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
@@ -110,11 +120,13 @@ final class App
 
             http_response_code(500);
             if (is_file($errorView)) {
+                $errorIdView = $errorId;
                 require $errorView;
             } else {
                 echo '<h1>500 - Internal Server Error</h1>';
+                echo '<p>Referensi: ' . $errorId . '</p>';
                 if ($debug) {
-                    echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
+                    echo '<pre>' . htmlspecialchars($safeMessage) . '</pre>';
                 }
             }
             exit;
@@ -125,17 +137,31 @@ final class App
                 return false;
             }
             $logFile = $logDir . '/app-' . date('Y-m-d') . '.log';
-            $entry = sprintf(
+            error_log(sprintf(
                 "[%s] Error %d: %s in %s:%d\n",
                 date('Y-m-d H:i:s'),
                 $level,
                 $message,
                 $file,
                 $line
-            );
-            error_log($entry, 3, $logFile);
+            ), 3, $logFile);
             return false;
         });
+    }
+
+    private static function rotateLogs(string $logDir): void
+    {
+        $maxDays = (int) Env::get('LOG_RETENTION_DAYS', 30);
+        $files = glob($logDir . '/app-*.log');
+        $cutoff = strtotime("-{$maxDays} days");
+
+        foreach ($files as $f) {
+            $basename = basename($f);
+            preg_match('/^app-(\d{4}-\d{2}-\d{2})\.log$/', $basename, $m);
+            if (!empty($m[1]) && strtotime($m[1]) < $cutoff) {
+                @unlink($f);
+            }
+        }
     }
 
     private function setTimezone(): void

@@ -197,7 +197,7 @@ function loadSlsData() {
     if (search) params.set('search[value]', search);
 
     var tbody = document.getElementById('slsBody');
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat...</td></tr>';
+    UI.showLoadingRow(tbody, 10);
 
     fetch('?' + params.toString())
         .then(function (r) { return r.json(); })
@@ -274,7 +274,7 @@ function loadNonSlsData() {
     if (search) params.set('search[value]', search);
 
     var tbody = document.getElementById('nonslsBody');
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat...</td></tr>';
+    UI.showLoadingRow(tbody, 9);
 
     fetch('?' + params.toString())
         .then(function (r) { return r.json(); })
@@ -301,14 +301,14 @@ function renderNonSlsTable(tbody, data) {
     data.forEach(function (d) {
         var statusBadge = d.status === 'selesai' ? 'bg-success' : (d.status === 'proses' ? 'bg-warning text-dark' : 'bg-secondary');
         html += '<tr>';
-        html += '<td><small>' + d.nmkec + '</small><br><b>' + d.nmdesa + '</b></td>';
-        html += '<td>' + d.nmsls + '</td>';
+        html += '<td><small>' + escHtml(d.nmkec) + '</small><br><b>' + escHtml(d.nmdesa) + '</b></td>';
+        html += '<td>' + escHtml(d.nmsls) + '</td>';
         html += '<td class="text-center">' + d.kk + '<br><small class="text-muted">KK Baru: ' + d.jml_kk + '</small></td>';
         html += '<td class="text-center">' + d.usaha + '<br><small class="text-muted">Wilker: ' + d.usaha_wilker + '</small></td>';
-        html += '<td class="text-center">' + d.muatan + '<br><small class="text-muted">Sub: ' + d.subsektor + '</small></td>';
-        html += '<td><small>PCL (Pencacah): ' + d.pencacah + '<br>PML (Pemeriksa): ' + d.pengawas + '</small></td>';
+        html += '<td class="text-center">' + d.muatan + '<br><small class="text-muted">Sub: ' + escHtml(d.subsektor) + '</small></td>';
+        html += '<td><small>PCL (Pencacah): ' + escHtml(d.pencacah) + '<br>PML (Pemeriksa): ' + escHtml(d.pengawas) + '</small></td>';
         html += '<td class="text-center"><span class="badge ' + statusBadge + '" style="font-size:9px">' + d.status + '</span></td>';
-        html += '<td style="font-size:9px">' + d.tgl_assign + '</td>';
+        html += '<td style="font-size:9px">' + (d.tgl_assign || '-') + '</td>';
         html += '</tr>';
     });
     tbody.innerHTML = html;

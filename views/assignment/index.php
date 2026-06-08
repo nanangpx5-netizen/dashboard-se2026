@@ -711,7 +711,7 @@ foreach ($kecamatan as $k) {
                             <?php foreach ($petugas_load as $pl): ?>
                             <tr>
                                 <td><?= htmlspecialchars($pl['nama_lengkap'] ?: $pl['email']) ?></td>
-                                <td><span class="badge bg-<?= $pl['role'] === 'admin' ? 'danger' : ($pl['role'] === 'pml' ? 'warning text-dark' : ($pl['role'] === 'pcl' ? 'success' : 'info')) ?>"><?= $pl['role'] ?></span></td>
+                                <td><span class="badge bg-<?= e($pl['role']) === 'admin' ? 'danger' : (e($pl['role']) === 'pml' ? 'warning text-dark' : (e($pl['role']) === 'pcl' ? 'success' : 'info')) ?>"><?= e($pl['role']) ?></span></td>
                                 <td class="text-center"><?= number_format($pl['as_pencacah']) ?></td>
                                 <td class="text-center"><?= number_format($pl['as_pengawas']) ?></td>
                                 <td class="text-center"><?= number_format($pl['as_task_force'] ?? 0) ?></td>

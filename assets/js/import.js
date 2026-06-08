@@ -1,3 +1,8 @@
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 $(document).ready(function () {
     $('#formImport').on('submit', function (e) {
         e.preventDefault();
@@ -21,12 +26,12 @@ $(document).ready(function () {
             success: function (res) {
                 if (res.success) {
                     $('#importResult')
-                        .html('<div class="alert alert-success">' + res.message + '</div>')
+                        .html('<div class="alert alert-success">' + escHtml(res.message) + '</div>')
                         .show();
                     form[0].reset();
                 } else {
                     $('#importResult')
-                        .html('<div class="alert alert-danger">' + (res.message || 'Import gagal') + '</div>')
+                        .html('<div class="alert alert-danger">' + escHtml(res.message || 'Import gagal') + '</div>')
                         .show();
                 }
             },
@@ -37,7 +42,7 @@ $(document).ready(function () {
                     msg = res.message || msg;
                 } catch (e) {}
                 $('#importResult')
-                    .html('<div class="alert alert-danger">' + msg + '</div>')
+                    .html('<div class="alert alert-danger">' + escHtml(msg) + '</div>')
                     .show();
             },
             complete: function () {

@@ -21,6 +21,9 @@ if (is_file($composerAutoload)) {
     require_once $composerAutoload;
 }
 
+// ─── Global helpers ─────────────────────────────────────────────────
+require_once APP_ROOT . '/src/Helpers/helpers.php';
+
 // ─── Load .env ──────────────────────────────────────────────────────
 $envFile = APP_ROOT . '/.env';
 if (!is_file($envFile)) {
