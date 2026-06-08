@@ -8,6 +8,22 @@ final class Validator
 {
     private array $errors = [];
 
+    public static function validateStatic(array $data, array $rules): array
+    {
+        $instance = new self();
+        return $instance->validate($data, $rules);
+    }
+
+    public static function validateOrFailStatic(array $data, array $rules): array
+    {
+        $instance = new self();
+        $result = $instance->validate($data, $rules);
+        if ($instance->hasErrors()) {
+            throw new ValidationException($instance->errors(), 'Validasi gagal');
+        }
+        return $result;
+    }
+
     public function validate(array $data, array $rules): array
     {
         $cleaned = [];
@@ -32,9 +48,12 @@ final class Validator
                     'int' => $this->validateInt($field, $value),
                     'email' => $this->validateEmail($field, $value),
                     'regex' => $this->validateRegex($field, $value, $params[0] ?? null),
-                    'in_array' => $this->validateInArray($field, $value, $params),
+                    'in', 'in_array' => $this->validateInArray($field, $value, $params),
                     'min' => $this->validateMin($field, $value, (int) ($params[0] ?? 0)),
                     'max' => $this->validateMax($field, $value, (int) ($params[0] ?? 0)),
+                    'alpha' => $this->validateAlpha($field, $value),
+                    'alphanum' => $this->validateAlphaNum($field, $value),
+                    'bool' => $this->validateBool($field, $value),
                     'trim' => $this->sanitizeTrim($field, $value),
                     'strip_tags' => $this->sanitizeStripTags($field, $value),
                     default => null,
@@ -106,13 +125,17 @@ final class Validator
         return true;
     }
 
-    private function validateInt(string $field, mixed $value): bool
+    private function validateInt(string $field, mixed $value): bool|array
     {
-        if ($value !== null && $value !== '' && filter_var($value, FILTER_VALIDATE_INT) === false) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        $intVal = filter_var($value, FILTER_VALIDATE_INT);
+        if ($intVal === false) {
             $this->addError($field, "Field '$field' harus berupa bilangan bulat.");
             return false;
         }
-        return true;
+        return ['value' => $intVal];
     }
 
     private function validateEmail(string $field, mixed $value): bool
@@ -169,6 +192,43 @@ final class Validator
         $len = is_string($value) ? strlen($value) : (is_numeric($value) ? (int) $value : PHP_INT_MAX);
         if ($len > $max) {
             $this->addError($field, "Field '$field' maksimal $max.");
+            return false;
+        }
+        return true;
+    }
+
+    private function validateAlpha(string $field, mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        if (!ctype_alpha((string) $value)) {
+            $this->addError($field, "Field '$field' hanya boleh huruf.");
+            return false;
+        }
+        return true;
+    }
+
+    private function validateAlphaNum(string $field, mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        if (!ctype_alnum((string) $value)) {
+            $this->addError($field, "Field '$field' hanya boleh huruf dan angka.");
+            return false;
+        }
+        return true;
+    }
+
+    private function validateBool(string $field, mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        $allowed = [true, false, 1, 0, '1', '0', 'true', 'false', 'on', 'off', 'yes', 'no'];
+        if (!in_array($value, $allowed, true)) {
+            $this->addError($field, "Field '$field' harus boolean.");
             return false;
         }
         return true;
