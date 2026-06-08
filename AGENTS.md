@@ -84,7 +84,9 @@ Integrate official prelist SE2026 data, apply audit fixes, add petugas/assignmen
 - **Tahap 2 — Admin UI to set kecamatan_tugas**: `UserModel::getKecamatanList($kd_kab)` + `getKecamatanName($kd_kec)` (resolve 3/7-digit); `create()` + `update()` support `kecamatan_tugas` column; `PetugasController::validateKecamatanTugas($role, $raw)` with regex `^([0-9]{3}|[0-9]{7})$` + existence check; `views/petugas/list.php` new "Kec. Tugas" column (badge SE2026 orange) + kecamatan dropdown in Create/Edit modals (visible only when role=pegawai via `toggleKecamatan()` JS)
 
 ### In Progress
-- *(none)*
+- **Security audit R-01 to R-17 completed (Jun 2026)** — XSS fix (`e()` helper), rate limiter login (5x/15min), Validator class (14 rules, static/instance), Cache locking (`flock`) + GC, production error handler (error IDs, PDO silence, log rotation), loading/empty state UI (CSS + JS helpers `UI.*`), CDN fallback lokal (12 vendor assets, `Asset` helper with `onerror`), session hardening (idle/max timeout, HMAC fingerprint)
+- **Unit tests added** — 87 total tests (8 Database, 21 Validator, 8 Cache, 7 Helpers, plus existing Insight/Prelist/Report/UserModel tests). All pass.
+- **Bug fix** — `Security::escape()` fixed `ENT_SUBSTRICT_XML` → `ENT_SUBSTITUTE`
 
 ### Blocked
 - *(none)*
