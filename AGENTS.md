@@ -83,10 +83,19 @@ Integrate official prelist SE2026 data, apply audit fixes, add petugas/assignmen
   - **Schema discovery** — `prelist_kecamatan.kd_kec` = 7-digit (e.g., '3509010') vs `prelist_sls.kd_kec`/`sipw_import.kdkec` = 3-digit (e.g., '010'); scope stored 7-digit, filter applied 3-digit
 - **Tahap 2 — Admin UI to set kecamatan_tugas**: `UserModel::getKecamatanList($kd_kab)` + `getKecamatanName($kd_kec)` (resolve 3/7-digit); `create()` + `update()` support `kecamatan_tugas` column; `PetugasController::validateKecamatanTugas($role, $raw)` with regex `^([0-9]{3}|[0-9]{7})$` + existence check; `views/petugas/list.php` new "Kec. Tugas" column (badge SE2026 orange) + kecamatan dropdown in Create/Edit modals (visible only when role=pegawai via `toggleKecamatan()` JS)
 
-### In Progress
-- **Security audit R-01 to R-17 completed (Jun 2026)** — XSS fix (`e()` helper), rate limiter login (5x/15min), Validator class (14 rules, static/instance), Cache locking (`flock`) + GC, production error handler (error IDs, PDO silence, log rotation), loading/empty state UI (CSS + JS helpers `UI.*`), CDN fallback lokal (12 vendor assets, `Asset` helper with `onerror`), session hardening (idle/max timeout, HMAC fingerprint)
-- **Unit tests added** — 87 total tests (8 Database, 21 Validator, 8 Cache, 7 Helpers, plus existing Insight/Prelist/Report/UserModel tests). All pass.
-- **Bug fix** — `Security::escape()` fixed `ENT_SUBSTRICT_XML` → `ENT_SUBSTITUTE`
+### Done (latest)
+- **R3.5 — FASIH Assignment data imported from Rekap Prelist_Jember.xlsx**:
+  - `patch_014_fasih_assignment.sql` — 9 FASIH columns di `prelist_sls` + 9 di `sipw_import` (total_fasih, fasih_kk, fasih_umk, fasih_um, fasih_ub, fasih_bangunan, dominan, flag_open_pbi, kk_open_pbi)
+  - `apply_patch_014.php` — diperbaiki: parse `DELIMITER` dengan benar (seperti patch_015), pakai `Database::instance()` bukan `getInstance()`
+  - `import_fasih_rekap.php` — ditulis ulang dari nol: baca langsung dari Excel `20260608 Rekap Prelist_Jember.xlsx` (bukan MySQL table `data_r keuangan_rekap_jember`). Column mapping benar: [22]=fasih_kk, [23]=fasih_umk, [25]=fasih_um, [26]=fasih_ub, [28]=fasih_bangunan, [29]=total_fasih, [30]=flag_open_pbi, [31]=kk_open_pbi
+  - **EXECUTED**: 16,538 SLS di `prelist_sls` + 16,772 subsls di `sipw_import` terupdate (100% match rate). Sum total_fasih = 1,129,633 dari 31 kecamatan. 198 SLS flagged open PBI (373 KK)
+- **R3.6 — LK Pairing petugas master imported**:
+  - `patch_015_lk_pairing.sql` — tabel `lk_petugas`, `lk_pairing`, kolom `wilayah_kerja.aktual_ppl_lk`/`aktual_pml_lk`
+  - **EXECUTED** via `apply_patch_015.php --execute`: semua tabel dan kolom terbuat ✓
+  - **EXECUTED** via `import_lk_pairing.php --phase=1 --execute`: 2,148 PPL + 280 PML di-insert ke `lk_petugas` (distribusi 31 kecamatan). Bug fix: `Reader()` pakai constructor `new Reader($options)` (tidak ada `setOptions()` di OpenSpout 4.28.5); path file pakai spasi sesuai nama asli; `substr($arg, 8)` bukan `7` untuk parsing `--phase=`
+  - **EXECUTED** via `seed_missing_ppl.php --execute`: 2 PPL baru (iturofiq@gmail.com, nurlailatuljh.87@gmail.com), 2 sudah ada (anyaninna074, bundaiif28)
+- **Monitoring page diperbarui**: 4 FASIH KPI cards, Pairing Progress bar, Distribusi Pairing per Kecamatan table, Missing PPL alert. Semua konten siap via data eksisting.
+- **87 unit tests pass** ✓. Semua syntax check pass ✓. Commit `99f25bf` pushed ke `master` ✓
 
 ### Blocked
 - *(none)*
@@ -98,13 +107,15 @@ Integrate official prelist SE2026 data, apply audit fixes, add petugas/assignmen
 - Per-kab SLS Detail sheets (7-44) used for `prelist_sls` — these have actual 14-digit `idsls`
 - Manual CLI arg parsing used instead of `getopt()` (getopt unreliable on this PHP/Windows build)
 - PCL/PML/TF dropdown di Assignment hanya user dengan role persis `pcl`/`pml`/`task_force`
-- `ReaderOptions::setTempFolder()` wajib untuk semua OpenSpout Reader/Writer di Windows (`C:\Windows\Temp` not writable)
+- OpenSpout 4.28.5: Options passed via `new Reader($options)` constructor (bukan `setOptions()`). `Options::setTempFolder()` wajib untuk semua OpenSpout Reader/Writer di Windows (`C:\Windows\Temp` not writable)
 - Monitoring widget menggunakan fetch API (bukan DataTables tambahan) untuk menghindari konflik
 - Perbedaan warna wilayah: **Biru `#1A73E8` = Jember**, **Oranye `#F47B20` = Jawa Timur**, **Abu `#6C757D` = Kab. Lain**
 - Cache helper sudah ada (`src/Helpers/Cache.php`) — DashboardController sudah menggunakan `Cache::remember()` untuk stats/wilayah/beban dengan TTL 60-300s
 - **Dual namespace fix**: porting rich API ke `src/`, bukan duplikasi — `src/Core/Database.php` jadi satu-satunya PDO singleton
 - **CSP default allows 'unsafe-inline' + 'unsafe-eval'** untuk kompatibilitas dengan Bootstrap 5.3, DataTables 1.13, Chart.js 4.4, Leaflet 1.9, Select2 4.1 — nonce-based CSP butuh refactor besar
 - **dash_rollback_points cleanup default = archive ALL is_used=0** (karena rollback tidak pernah dipakai di produksi selama 1 bulan+); `--keep-unused` flag untuk preserve is_used=0 yang masih baru
+- **FASIH column mapping from Rekap_Jember.xlsx**: [22]=fasih_kk (Keluarga), [23]=fasih_umk (UMKM Keluarga), [25]=fasih_um (UMK), [26]=fasih_ub (UM), [28]=fasih_bangunan, [29]=total_fasih, [30]=flag_open_pbi, [31]=kk_open_pbi. File has 2 header rows + 16,772 data rows. Column mapping berbeda dari script lama yang salah.
+- **import_fasih_rekap.php ditulis ulang** dari query JOIN ke `data_r keuangan_rekap_jember` (tidak ada) → baca langsung dari Excel `20260608 Rekap Prelist_Jember.xlsx` via OpenSpout, aggregate by 14-digit idsls untuk prelist_sls, update langsung ke sipw_import per 16-digit idsubsls.
 - **Env class fallback** DB_NAME/DB_USER/DB_PASS → DB_DATABASE/DB_USERNAME/DB_PASSWORD (backward compat dengan .env lama)
 - **Patch_007 idempotent via information_schema + DELIMITER/CREATE PROCEDURE** — MySQL 8.0 tidak support `ADD COLUMN IF NOT EXISTS`, jadi pakai stored procedure dengan cek `information_schema.columns` dulu
 - **id_sobat regional code mapping** (untuk backfill kecamatan): `kd_kab=SUBSTRING(id_sobat,1,4)`, `kd_kec=CONCAT(kd_kab, SUBSTRING(id_sobat,5,2), '0')` — last char selalu '0' karena BPS encoding
@@ -121,8 +132,11 @@ Integrate official prelist SE2026 data, apply audit fixes, add petugas/assignmen
 - `password_fasih_plain` column removed — existing data ignored; view no longer exposes it
 - `app/` directory **REMOVED** — semua file PHP di `src/`, views di `views/`, layouts di `views/layouts/`
 - `sipw_assignment` has **0 rows** — monitoring widgets show empty states
-- `prelist_sls` has 234,180 rows (16,538 for Jember/3509); `sipw_import` has 16,772 SLS from 31 kecamatan
-- Users: 3,104 total; Active admins: 5 (id 1-3, 13, 14-inactive). 5 pegawai: 4 created by R3.1 (ali/budi/citra/dani/erni) + 1 existing `pegawai3509`
+- `prelist_sls` has 234,180 rows (16,538 for Jember/3509); `sipw_import` has 16,772 subsls from 31 kecamatan
+- FASIH columns added: `prelist_sls` & `sipw_import` now have total_fasih, fasih_kk, fasih_umk, fasih_um, fasih_ub, fasih_bangunan, dominan, flag_open_pbi, kk_open_pbi. Sum total_fasih = 1,129,633 (Jember only)
+- LK Pairing: `lk_petugas` has 2,148 PPL + 280 PML. `lk_pairing` still empty (phase 2 nunggu 12 Juni 2026). `wilayah_kerja` has `aktual_ppl_lk`/`aktual_pml_lk` columns
+- OpenSpout 4.28.5: Options passed via `new Reader($options)` constructor, NOT `setOptions()` method
+- Users: 5,865 total (incl. 2 new PPL: iturofiq, nurlailatuljh); Active admins: 5. 5 pegawai: ali/budi/citra/dani/erni + 1 existing pegawai3509
 - OpenSpout temp folder must be set to `storage/import` — not `sys_get_temp_dir()`
 - `DashboardController` passes `$kec_summary`, `$prelist_kec`, `$total_prelist` to monitoring view
 - `AuthController::doLogin()` calls `Session::setFingerprint()` + `Session::regenerate()` — new session ID after login
