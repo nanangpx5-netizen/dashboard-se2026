@@ -1,21 +1,24 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Apply Patch 014: Tambah kolom FASIH Assignment ke sipw_import & prelist_sls
  *
  * Usage:
- *   php scripts/apply_patch_014.php          → dry-run (show SQL only)
- *   php scripts/apply_patch_014.php --execute → apply ke database
+ *   php scripts/apply_patch_014.php               → dry-run
+ *   php scripts/apply_patch_014.php --execute      → apply ke database
  */
 
-declare(strict_types=1);
 require_once __DIR__ . '/../src/bootstrap.php';
+
+use App\Core\Database;
 
 $execute = in_array('--execute', $argv ?? [], true);
 
 echo "=== Patch 014: FASIH Assignment Columns ===" . PHP_EOL;
 echo "Mode: " . ($execute ? 'EXECUTE' : 'DRY-RUN') . PHP_EOL . PHP_EOL;
 
-$db   = App\Core\Database::getInstance();
+$db   = Database::instance();
 $pdo  = $db->pdo();
 
 $sqlFile = __DIR__ . '/../database/patch_014_fasih_assignment.sql';
@@ -24,24 +27,71 @@ if (!file_exists($sqlFile)) {
     exit(1);
 }
 
-$sql = file_get_contents($sqlFile);
+$raw = file_get_contents($sqlFile);
+
+// Parse SQL: remove DELIMITER lines, split statements
+function parse_sql_fasih(string $sql): array
+{
+    $sql = preg_replace('/^DELIMITER\s+\/\/\s*$/m', '', $sql);
+    $sql = preg_replace('/^DELIMITER\s+;\s*$/m', '', $sql);
+    $lines = preg_split('/\R/', $sql);
+    $statements = [];
+    $current = '';
+    $inProcedure = false;
+
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if (empty($trimmed)) {
+            if (!empty($current)) $current .= "\n";
+            continue;
+        }
+        if (str_starts_with($trimmed, '--')) {
+            if (!empty($current)) $current .= "\n";
+            continue;
+        }
+        if (str_starts_with($trimmed, 'CREATE PROCEDURE')) {
+            $inProcedure = true;
+        }
+        $current .= $line . "\n";
+        if ($inProcedure && str_ends_with(trim($line), '//')) {
+            $statements[] = rtrim($current, " \n\r\t\v\0/") . ';';
+            $current = '';
+            $inProcedure = false;
+        } elseif (!$inProcedure && str_ends_with(trim($line), ';')) {
+            $statements[] = $current;
+            $current = '';
+        }
+    }
+
+    if (!empty(trim($current))) {
+        $statements[] = $current;
+    }
+
+    return $statements;
+}
 
 if (!$execute) {
-    echo "SQL yang akan dijalankan:" . PHP_EOL;
-    echo str_repeat('-', 60) . PHP_EOL;
-    echo $sql . PHP_EOL;
-    echo str_repeat('-', 60) . PHP_EOL;
-    echo PHP_EOL . "Jalankan ulang dengan --execute untuk apply." . PHP_EOL;
+    echo "DRY-RUN: Akan menambah 9 kolom ke prelist_sls dan 9 kolom ke sipw_import." . PHP_EOL;
+    echo "Jalankan: php scripts/apply_patch_014.php --execute" . PHP_EOL . PHP_EOL;
     exit(0);
 }
 
-try {
-    // Jalankan sebagai multi-statement via PDO exec
-    $pdo->exec($sql);
-    echo "✓ Patch 014 berhasil diaplikasikan." . PHP_EOL;
-} catch (\Throwable $e) {
-    echo "✗ Error: " . $e->getMessage() . PHP_EOL;
-    exit(1);
+$statements = parse_sql_fasih($raw);
+
+echo "Menjalankan " . count($statements) . " statement SQL..." . PHP_EOL . PHP_EOL;
+
+foreach ($statements as $stmt) {
+    $stmt = trim($stmt);
+    if (empty($stmt)) continue;
+    try {
+        $start = microtime(true);
+        $pdo->exec($stmt);
+        $elapsed = round(microtime(true) - $start, 2);
+        $firstLine = strtok($stmt, "\n");
+        echo "  OK ({$elapsed}s): " . substr($firstLine, 0, 90) . PHP_EOL;
+    } catch (Throwable $e) {
+        echo "  ERR: " . $e->getMessage() . PHP_EOL;
+    }
 }
 
 // Verifikasi
@@ -61,6 +111,7 @@ $checks = [
     ['prelist_sls', 'fasih_umk'],
     ['prelist_sls', 'fasih_um'],
     ['prelist_sls', 'fasih_ub'],
+    ['prelist_sls', 'fasih_bangunan'],
     ['prelist_sls', 'dominan'],
     ['prelist_sls', 'flag_open_pbi'],
     ['prelist_sls', 'kk_open_pbi'],
@@ -73,9 +124,9 @@ foreach ($checks as [$table, $col]) {
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
         [$table, $col]
     );
-    $status = $exists ? '✓' : '✗ MISSING';
-    echo "  {$table}.{$col}: {$status}" . PHP_EOL;
+    $status = $exists ? 'OK' : 'MISSING';
     if (!$exists) $allOk = false;
+    echo "  {$table}.{$col}: {$status}" . PHP_EOL;
 }
 
 echo PHP_EOL . ($allOk ? "✓ Semua kolom berhasil ditambahkan." : "✗ Ada kolom yang gagal.") . PHP_EOL;

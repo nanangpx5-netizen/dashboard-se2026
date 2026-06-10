@@ -23,7 +23,7 @@ use OpenSpout\Reader\XLSX\Reader;
 use OpenSpout\Reader\XLSX\Options;
 
 // ─── Configuration ────────────────────────────────────────────
-define('LK_FILE', __DIR__ . '/../data/LK_Pairing_SE2026.xlsx');
+define('LK_FILE', __DIR__ . '/../data/LK Pairing SE2026.xlsx');
 
 define('BATCH_SIZE', 500);
 
@@ -67,7 +67,7 @@ $overwrite = false;
 
 foreach ($argv as $arg) {
     if (str_starts_with($arg, '--phase=')) {
-        $phase = substr($arg, 7);
+        $phase = substr($arg, 8);
     }
     if ($arg === '--execute') $execute = true;
     if ($arg === '--overwrite') $overwrite = true;
@@ -112,10 +112,9 @@ if ($dryRun) {
     echo "DRY-RUN mode. Jalankan dengan --execute untuk eksekusi.\n\n";
 }
 
-$reader = new Reader();
 $options = new Options();
 $options->setTempFolder(__DIR__ . '/../storage/import');
-$reader->setOptions($options);
+$reader = new Reader($options);
 $reader->open(LK_FILE);
 
 // ─── Phase 1: Import lk_petugas ──────────────────────────────
