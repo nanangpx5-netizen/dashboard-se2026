@@ -37,6 +37,7 @@ class PmlReportController extends Controller
 
     private function showPage(): void
     {
+        $user = Session::get('user');
         $periode = $_GET['periode'] ?? date('Y-m');
         $stats   = $this->model->getStats($periode);
         $kecamatan = [];
@@ -48,12 +49,38 @@ class PmlReportController extends Controller
             $kecamatan = [];
         }
 
-        $this->data['page_title'] = 'Laporan Statistik PML SLS';
+        // Data spesifik untuk PML yang sedang login
+        $pmlReportData = null;
+        $pmlAssignmentCount = 0;
+        $pmlExistingReport = null;
+
+        if ($user && $user['role'] === 'pml') {
+            $pmlId = (int) $user['id'];
+            $pmlAssignmentCount = $this->model->countPmlAssignments($pmlId);
+            $pmlExistingReport = $this->model->getReportByPmlPeriode($pmlId, $periode);
+
+            // Statistik progress PML ini
+            $db = Database::instance()->pdo();
+            $stmt = $db->prepare("
+                SELECT COUNT(*) as total,
+                       SUM(status = 'selesai') as selesai,
+                       SUM(status = 'proses') as proses,
+                       SUM(status = 'belum') as belum
+                FROM sipw_assignment WHERE pengawas_id = ?
+            ");
+            $stmt->execute([$pmlId]);
+            $pmlReportData = $stmt->fetch(\PDO::FETCH_ASSOC);
+        }
+
+        $this->data['page_title'] = 'Laporan PML';
         $this->render('pml-report/index', [
-            'stats'     => $stats,
-            'kecamatan' => $kecamatan,
-            'periode'   => $periode,
-            'js'        => ['pml-report'],
+            'stats'       => $stats,
+            'kecamatan'   => $kecamatan,
+            'periode'     => $periode,
+            'pml_report_data'   => $pmlReportData,
+            'pml_assignment_count' => $pmlAssignmentCount,
+            'pml_existing_report'  => $pmlExistingReport,
+            'js'          => ['pml-report'],
         ]);
     }
 
@@ -111,12 +138,21 @@ class PmlReportController extends Controller
         }
 
         $pmlId    = (int) $user['id'];
-        $periode  = $_POST['periode'] ?? date('Y-m');
-        $catatan  = $_POST['catatan'] ?? '';
+        $periode  = $_POST['periode'] ?? '';
+        $catatan  = trim($_POST['catatan'] ?? '');
 
-        // Validasi format periode
-        if (!preg_match('/^\d{4}-\d{2}$/', $periode)) {
-            $this->json(['error' => true, 'message' => 'Format periode tidak valid (YYYY-MM)']);
+        if (strlen($catatan) > 500) {
+            $this->json(['error' => true, 'message' => 'Catatan maksimal 500 karakter.']);
+            return;
+        }
+
+        // Validasi format periode (YYYY-MM, month range 01-12, tidak boleh future)
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periode)) {
+            $this->json(['error' => true, 'message' => 'Format periode tidak valid (YYYY-MM, bulan 01-12)']);
+            return;
+        }
+        if ($periode > date('Y-m')) {
+            $this->json(['error' => true, 'message' => 'Periode tidak boleh lebih dari bulan berjalan.']);
             return;
         }
 

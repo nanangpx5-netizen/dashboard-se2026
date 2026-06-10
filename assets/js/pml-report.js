@@ -1,5 +1,6 @@
 $(document).ready(function () {
-    if ($.fn.DataTable) {
+    // ─── Admin/Operator: DataTable ──────────────────────────
+    if ($.fn.DataTable && $('#tablePmlReport').length) {
         window.pmlTable = $('#tablePmlReport').DataTable({
             processing: true,
             serverSide: true,
@@ -129,6 +130,52 @@ $(document).ready(function () {
         $('#filterSearch').val('');
         reloadStats();
     };
+
+    // ─── PML: Form Submit ─────────────────────────────────
+    if ($('#formPmlReport').length) {
+        $('#formPmlReport').on('submit', function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var btnSubmit = $('#btnSubmitReport');
+            var btnLoading = $('#btnLoadingReport');
+            var alertBox = $('#pmlReportAlert');
+
+            alertBox.addClass('d-none').removeClass('alert-success alert-danger');
+            btnSubmit.hide();
+            btnLoading.show();
+
+            $.ajax({
+                url: '?page=dashboard&sub=pml-report&action=submit',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    periode: $('#inputPeriode').val(),
+                    catatan: $('#inputCatatan').val()
+                },
+                success: function (res) {
+                    if (res.success) {
+                        alertBox.removeClass('d-none alert-danger').addClass('alert-success').html('<i class="fas fa-check-circle me-1"></i>' + (res.message || 'Laporan berhasil dikirim.'));
+                        btnSubmit.replaceWith('<div class="text-success fw-semibold small py-1"><i class="fas fa-check-circle me-1"></i>Laporan sudah dikirim.</div>');
+                    } else {
+                        alertBox.removeClass('d-none alert-success').addClass('alert-danger').html('<i class="fas fa-exclamation-circle me-1"></i>' + (res.message || 'Gagal mengirim laporan.'));
+                        btnSubmit.show();
+                    }
+                },
+                error: function (xhr) {
+                    var msg = 'Terjadi kesalahan server.';
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        if (r.message) msg = r.message;
+                    } catch (e) {}
+                    alertBox.removeClass('d-none alert-success').addClass('alert-danger').html('<i class="fas fa-exclamation-circle me-1"></i>' + msg);
+                    btnSubmit.show();
+                },
+                complete: function () {
+                    btnLoading.hide();
+                }
+            });
+        });
+    }
 });
 
 var searchTimer;

@@ -95,10 +95,10 @@ $isAdmin = $role === 'admin' || $role === 'operator';
             </li>
             <?php endif; ?>
 
-            <?php if ($isAdmin): ?>
+            <?php if ($isAdmin || $role === 'pml'): ?>
             <li class="nav-item mb-1">
-                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'report' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=report">
-                    <i class="fas fa-file-alt me-2"></i><span>Laporan</span>
+                <a class="nav-link text-white <?= $page === 'dashboard' && $sub === 'pml-report' ? 'active bg-se2026 rounded' : '' ?>" href="?page=dashboard&sub=pml-report">
+                    <i class="fas fa-clipboard-list me-2"></i><span>Laporan PML</span>
                 </a>
             </li>
             <?php endif; ?>
