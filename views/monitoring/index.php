@@ -38,13 +38,94 @@
     </div>
 </div>
 
-<div class="d-flex align-items-center gap-2 mb-3">
-    <h6 class="mb-0 fw-semibold"><i class="fas fa-map me-1 text-se2026"></i>Kecamatan — Status Assign</h6>
-    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadKecamatanSummary()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-    <div class="ms-auto small text-muted">
-        <i class="fas fa-layer-group me-1"></i><span id="kecTotalAssigned">0</span> dari <span id="kecTotal">0</span> kecamatan ter-assign
+    <div class="row g-2 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card border-se2026 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <small class="text-muted">Total Assignment FASIH</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-se2026" id="statTotalFasih">
+                        <?= number_format($fasih_summary['total_fasih'] ?? 0) ?>
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-se2026 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <small class="text-muted">Total FCC (Keluarga)</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-se2026" id="statTotalFasihKK">
+                        <?= number_format($fasih_summary['fasih_kk'] ?? 0) ?>
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-se2026 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <small class="text-muted">Total UMK</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-se2026" id="statTotalFasihUMK">
+                        <?= number_format($fasih_summary['fasih_umk'] ?? 0) ?>
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-se2026 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <small class="text-muted">Open PBI</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-se2026" id="statTotalPBI">
+                        <?= number_format($fasih_summary['sls_pbi'] ?? 0) ?> SLS / <?= number_format($fasih_summary['kk_pbi'] ?? 0) ?> KK
+                    </h4>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <!-- ─── Pairing Progress Widget ─────────────────────── -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+            <small class="fw-semibold"><i class="fas fa-link me-1 text-se2026"></i>LK Pairing Progress</small>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadPairingProgress()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="card-body py-2" id="pairingProgressBody">
+            <div class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data pairing...</div>
+        </div>
+    </div>
+
+    <!-- ─── 4 PPL Missing Alert ─────────────────────────── -->
+    <div id="missingPplAlert" class="d-none mb-3"></div>
+
+    <!-- ─── Pairing Distribution per Kecamatan ─────────── -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+            <small class="fw-semibold"><i class="fas fa-layer-group me-1 text-se2026"></i>Distribusi Pairing per Kecamatan</small>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadPairingPerKec()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:240px">
+                <table class="table table-sm table-hover mb-0" style="font-size:11px">
+                    <thead class="bg-light sticky-top">
+                        <tr>
+                            <th>Kecamatan</th>
+                            <th class="text-center">Subsls</th>
+                            <th class="text-center">Muatan</th>
+                            <th class="text-center">PPL</th>
+                            <th class="text-center">PML</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pairingKecTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-map me-1 text-se2026"></i>Kecamatan — Status Assign</h6>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="loadKecamatanSummary()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+        <div class="ms-auto small text-muted">
+            <i class="fas fa-layer-group me-1"></i><span id="kecTotalAssigned">0</span> dari <span id="kecTotal">0</span> kecamatan ter-assign
+        </div>
+    </div>
 
 <div class="row g-2 mb-4" id="kecamatanCards">
     <div class="col-12 text-center text-muted py-4">

@@ -510,7 +510,16 @@ class MonitoringModel
                 ps.subsektor,
                 ps.usaha_se2016,
                 ps.usaha_wilkerstat,
-                ps.imported_at
+                ps.imported_at,
+                ps.total_fasih,
+                ps.fasih_kk,
+                ps.fasih_umk,
+                ps.fasih_um,
+                ps.fasih_ub,
+                ps.fasih_bangunan,
+                ps.dominan,
+                ps.flag_open_pbi,
+                ps.kk_open_pbi
             FROM prelist_sls ps
             {$where}
             ORDER BY ps.nm_kec, ps.nm_desa, ps.nama_sls
@@ -561,6 +570,91 @@ class MonitoringModel
             ORDER BY ps.nm_kec
         ");
         $stmt->execute([$kdkab]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get summary FASIH (assignment) data
+     */
+    public function getFasihSummary(string $kdkab = '3509', string $kdkec = ''): array
+    {
+        $sql = "
+            SELECT
+                COUNT(*) AS total_sls,
+                COALESCE(SUM(total_fasih), 0) AS total_fasih,
+                COALESCE(SUM(fasih_kk), 0) AS fasih_kk,
+                COALESCE(SUM(fasih_umk), 0) AS fasih_umk,
+                COALESCE(SUM(fasih_um), 0) AS fasih_um,
+                COALESCE(SUM(fasih_ub), 0) AS fasih_ub,
+                COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan,
+                COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi,
+                COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi
+            FROM prelist_sls ps
+            WHERE ps.kd_kab = ?
+        ";
+        $params = [$kdkab];
+        
+        if (!empty($kdkec)) {
+            $sql .= " AND ps.kd_kec = ?";
+            $params[] = $kdkec;
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch() ?: [];
+    }
+
+    /**
+     * Get FASIH distribution per kecamatan
+     */
+    public function getFasihPerKecamatan(string $kdkab = '3509'): array
+    {
+        $sql = 'SELECT ps.kd_kec, ps.nm_kec, COUNT(*) AS total_sls, '
+             . 'COALESCE(SUM(total_fasih), 0) AS total_fasih, '
+             . 'COALESCE(SUM(fasih_kk), 0) AS fasih_kk, '
+             . 'COALESCE(SUM(fasih_umk), 0) AS fasih_umk, '
+             . 'COALESCE(SUM(fasih_um), 0) AS fasih_um, '
+             . 'COALESCE(SUM(fasih_ub), 0) AS fasih_ub, '
+             . 'COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan, '
+             . 'COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi, '
+             . 'COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi '
+             . 'FROM prelist_sls ps '
+             . 'WHERE ps.kd_kab = ? '
+             . 'GROUP BY ps.kd_kec, ps.nm_kec '
+             . 'ORDER BY total_fasih DESC';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$kdkab]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get FASIH distribution per desa
+     */
+    public function getFasihPerDesa(string $kdkab = '3509', string $kdkec = ''): array
+    {
+        $sql = 'SELECT ps.kd_kec, ps.kd_desa, ps.nm_desa, COUNT(*) AS total_sls, '
+             . 'COALESCE(SUM(total_fasih), 0) AS total_fasih, '
+             . 'COALESCE(SUM(fasih_kk), 0) AS fasih_kk, '
+             . 'COALESCE(SUM(fasih_umk), 0) AS fasih_umk, '
+             . 'COALESCE(SUM(fasih_um), 0) AS fasih_um, '
+             . 'COALESCE(SUM(fasih_ub), 0) AS fasih_ub, '
+             . 'COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan, '
+             . 'COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi, '
+             . 'COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi '
+             . 'FROM prelist_sls ps '
+             . 'WHERE ps.kd_kab = ?';
+        
+        $params = [$kdkab];
+        
+        if (!empty($kdkec)) {
+            $sql .= " AND ps.kd_kec = ?";
+            $params[] = $kdkec;
+        }
+        
+        $sql .= " GROUP BY ps.kd_kec, ps.kd_desa, ps.nm_desa ORDER BY total_fasih DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -629,6 +723,121 @@ class MonitoringModel
             JOIN users u ON u.id = sa.task_force_id
             WHERE u.status_akun = 'active'
             ORDER BY u.username
+        ")->fetchAll();
+    }
+
+    // ─── LK Pairing Queries ──────────────────────────────────
+
+    /**
+     * Status progress pairing dari lk_pairing
+     */
+    public function getPairingProgress(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                COUNT(*) AS total_subsls,
+                COALESCE(SUM(CASE WHEN ppl_id IS NOT NULL OR kode_ppl IS NOT NULL THEN 1 ELSE 0 END), 0) AS paired_ppl,
+                COALESCE(SUM(CASE WHEN pml_id IS NOT NULL OR kode_pml IS NOT NULL THEN 1 ELSE 0 END), 0) AS paired_pml,
+                COALESCE(SUM(CASE WHEN ppl_id IS NOT NULL AND pml_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS paired_both,
+                COALESCE(SUM(muatan), 0) AS total_muatan,
+                COALESCE(SUM(CASE WHEN muatan = 0 THEN 1 ELSE 0 END), 0) AS zero_muatan
+            FROM lk_pairing
+        ")->fetch() ?: [];
+    }
+
+    /**
+     * Beban kerja per PPL dari lk_pairing
+     */
+    public function getBebanPerPpl(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                lp.nama,
+                lp.nm_kec,
+                lp.email,
+                COUNT(lk.id) AS n_sls,
+                COALESCE(SUM(lk.muatan), 0) AS total_muatan,
+                COALESCE(ROUND(AVG(lk.muatan)), 0) AS avg_muatan,
+                COALESCE(SUM(lk.muatan_kel), 0) AS muatan_kel,
+                COALESCE(SUM(lk.muatan_st2023), 0) AS muatan_st2023,
+                COALESCE(SUM(lk.muatan_bang), 0) AS muatan_bang
+            FROM lk_pairing lk
+            JOIN lk_petugas lp ON lp.kode_lk = lk.kode_ppl
+            GROUP BY lk.kode_ppl
+            ORDER BY total_muatan DESC
+        ")->fetchAll();
+    }
+
+    /**
+     * Beban kerja per PML dari lk_pairing
+     */
+    public function getBebanPerPml(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                lp.nama,
+                lp.nm_kec,
+                lp.email,
+                COUNT(lk.id) AS n_sls,
+                COALESCE(SUM(lk.muatan), 0) AS total_muatan,
+                COALESCE(ROUND(AVG(lk.muatan)), 0) AS avg_muatan
+            FROM lk_pairing lk
+            JOIN lk_petugas lp ON lp.kode_lk = lk.kode_pml
+            GROUP BY lk.kode_pml
+            ORDER BY total_muatan DESC
+        ")->fetchAll();
+    }
+
+    /**
+     * Pairing distribution per kecamatan
+     */
+    public function getPairingPerKecamatan(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                lp.nm_kec,
+                lp.kd_kec,
+                COUNT(DISTINCT lk.id) AS total_subsls,
+                COALESCE(SUM(lk.muatan), 0) AS total_muatan,
+                COUNT(DISTINCT CASE WHEN lp.tipe = 'PPL' THEN lp.id END) AS total_ppl,
+                COUNT(DISTINCT CASE WHEN lp.tipe = 'PML' THEN lp.id END) AS total_pml,
+                COALESCE(SUM(CASE WHEN lk.ppl_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS paired_ppl
+            FROM lk_petugas lp
+            LEFT JOIN lk_pairing lk ON lk.kode_ppl = lp.kode_lk OR lk.kode_pml = lp.kode_lk
+            GROUP BY lp.nm_kec, lp.kd_kec
+            ORDER BY lp.nm_kec
+        ")->fetchAll();
+    }
+
+    /**
+     * Daftar email PPL yang tidak ditemukan di users
+     */
+    public function getMissingPplEmails(): array
+    {
+        return $this->pdo->query("
+            SELECT lp.nama, lp.email, lp.kode_lk, lp.nm_kec
+            FROM lk_petugas lp
+            WHERE lp.tipe = 'PPL' AND lp.user_id IS NULL
+            ORDER BY lp.nm_kec, lp.nama
+        ")->fetchAll();
+    }
+
+    /**
+     * Summary per kecamatan: kebutuhan vs aktual dari LK
+     */
+    public function getCoveragePerKecamatan(): array
+    {
+        return $this->pdo->query("
+            SELECT
+                wk.nama_kecamatan,
+                wk.kebutuhan_pcl,
+                wk.kebutuhan_pml,
+                COALESCE(wk.aktual_ppl_lk, 0) AS aktual_ppl,
+                COALESCE(wk.aktual_pml_lk, 0) AS aktual_pml,
+                COALESCE(wk.aktual_ppl_lk, 0) - wk.kebutuhan_pcl AS selisih_ppl,
+                COALESCE(wk.aktual_pml_lk, 0) - wk.kebutuhan_pml AS selisih_pml
+            FROM wilayah_kerja wk
+            ORDER BY selisih_ppl ASC
         ")->fetchAll();
     }
 }

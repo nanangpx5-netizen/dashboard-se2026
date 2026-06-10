@@ -33,14 +33,21 @@ class MonitoringController extends Controller
         $action = $_GET['action'] ?? '';
 
         match ($action) {
-            'data'           => $this->dataTable(),
-            'export'         => $this->exportExcel(),
-            'filters'        => $this->filterDropdowns(),
+            'data'              => $this->dataTable(),
+            'export'            => $this->exportExcel(),
+            'filters'           => $this->filterDropdowns(),
             'kecamatan-summary' => $this->kecamatanSummary(),
-            'desa-summary'   => $this->desaSummary(),
-            'sls-data'       => $this->slsData(),
-            'non-sls-data'   => $this->nonSlsData(),
-            default          => $this->showPage(),
+            'desa-summary'      => $this->desaSummary(),
+            'sls-data'          => $this->slsData(),
+            'non-sls-data'      => $this->nonSlsData(),
+            // LK Pairing endpoints
+            'pairing-progress'  => $this->pairingProgress(),
+            'beban-per-ppl'     => $this->bebanPerPpl(),
+            'beban-per-pml'     => $this->bebanPerPml(),
+            'missing-ppl'       => $this->missingPpl(),
+            'coverage-kec'      => $this->coverageKecamatan(),
+            'pairing-per-kec'   => $this->pairingPerKec(),
+            default             => $this->showPage(),
         };
     }
 
@@ -71,6 +78,16 @@ class MonitoringController extends Controller
         // Data untuk widget monitoring
         $kecSummary   = $this->model->getKecamatanSummary();
         $totalPrelist = $this->model->countPrelistSls('3509', '', $kdkec);
+        
+        // Data FASIH baru (assignment)
+        $fasihSummary = $this->model->getFasihSummary('3509', $kdkec);
+        $fasihPerKec = $this->model->getFasihPerKecamatan('3509');
+        $fasihPerDesa = $this->model->getFasihPerDesa('3509', $kdkec);
+
+        // Data LK Pairing
+        $pairingProgress = $this->model->getPairingProgress();
+        $missingPpl = $this->model->getMissingPplEmails();
+        $pairingPerKec = $this->model->getPairingPerKecamatan();
 
         $this->data['page_title'] = 'Monitoring Wilayah';
         $this->data['kecamatan_scope'] = $scope;
@@ -83,6 +100,14 @@ class MonitoringController extends Controller
             'pencacah'      => $petugas['pencacah'],
             'pengawas'      => $petugas['pengawas'],
             'task_force'    => $petugas['task_force'],
+            // FASIH data
+            'fasih_summary'    => $fasihSummary,
+            'fasih_per_kec'   => $fasihPerKec,
+            'fasih_per_desa'  => $fasihPerDesa,
+            // LK Pairing data
+            'pairing_progress' => $pairingProgress,
+            'missing_ppl'      => $missingPpl,
+            'pairing_per_kec'  => $pairingPerKec,
             'js'            => ['monitoring'],
         ]);
     }
@@ -353,6 +378,44 @@ class MonitoringController extends Controller
 
         $desa = $this->model->getDesa($kdkec);
         $this->json(['success' => true, 'data' => $desa]);
+    }
+
+    // ─── LK Pairing AJAX Endpoints ───────────────────────────
+
+    private function pairingProgress(): void
+    {
+        $data = $this->model->getPairingProgress();
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    private function bebanPerPpl(): void
+    {
+        $data = $this->model->getBebanPerPpl();
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    private function bebanPerPml(): void
+    {
+        $data = $this->model->getBebanPerPml();
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    private function missingPpl(): void
+    {
+        $data = $this->model->getMissingPplEmails();
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    private function coverageKecamatan(): void
+    {
+        $data = $this->model->getCoveragePerKecamatan();
+        $this->json(['success' => true, 'data' => $data]);
+    }
+
+    private function pairingPerKec(): void
+    {
+        $data = $this->model->getPairingPerKecamatan();
+        $this->json(['success' => true, 'data' => $data]);
     }
 
     /**

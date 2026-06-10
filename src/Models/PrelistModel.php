@@ -206,17 +206,105 @@ class PrelistModel
 
     public function getMapKecamatan(string $kdKab = '3509'): array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT
-                kd_kec, nm_kec,
-                jml_kk, utp, subsektor, muatan_rs,
-                ROUND(muatan_rs / NULLIF(jml_kk, 0), 2) AS rasio_muatan,
-                ROUND(muatan_rs / NULLIF(ppl, 0), 0) AS beban_ppl
-            FROM prelist_kecamatan
-            WHERE kd_kab = ?
-            ORDER BY nm_kec
-        ");
+        $stmt = $this->pdo->prepare('SELECT kd_kec, nm_kec, jml_kk, utp, subsektor, muatan_rs, '
+            . "ROUND(muatan_rs / NULLIF(jml_kk, 0), 2) AS rasio_muatan, "
+            . "ROUND(muatan_rs / NULLIF(ppl, 0), 0) AS beban_ppl "
+            . 'FROM prelist_kecamatan '
+            . 'WHERE kd_kab = ? '
+            . 'ORDER BY nm_kec');
         $stmt->execute([$kdKab]);
         return $stmt->fetchAll();
+    }
+
+    // ─── FASIH Assignment KPI ───────────────────────────────────────────────────
+
+    public function getFasihKpi(string $kdKab = '3509'): array
+    {
+        $sql = 'SELECT '
+            . 'COALESCE(SUM(total_fasih), 0) AS total_fasih, '
+            . 'COALESCE(SUM(fasih_kk), 0) AS fasih_kk, '
+            . 'COALESCE(SUM(fasih_umk), 0) AS fasih_umk, '
+            . 'COALESCE(SUM(fasih_um), 0) AS fasih_um, '
+            . 'COALESCE(SUM(fasih_ub), 0) AS fasih_ub, '
+            . 'COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan, '
+            . 'COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi, '
+            . 'COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi, '
+            . 'COUNT(*) AS total_sls '
+            . 'FROM prelist_sls '
+            . 'WHERE kd_kab = ?';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$kdKab]);
+        return $stmt->fetch() ?: [];
+    }
+
+    public function getFasihPerKecamatan(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("SELECT
+            kd_kec, nm_kec,
+            COALESCE(SUM(total_fasih), 0) AS total_fasih,
+            COALESCE(SUM(fasih_kk), 0) AS fasih_kk,
+            COALESCE(SUM(fasih_umk), 0) AS fasih_umk,
+            COALESCE(SUM(fasih_um), 0) AS fasih_um,
+            COALESCE(SUM(fasih_ub), 0) AS fasih_ub,
+            COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan,
+            COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi,
+            COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi,
+            COUNT(*) AS total_sls
+        FROM prelist_sls
+        WHERE kd_kab = ?
+        GROUP BY kd_kec, nm_kec
+        ORDER BY total_fasih DESC
+    ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetchAll();
+    }
+
+    public function getFasihPerDesa(string $kdKab = '3509', string $kdKec = ''): array
+    {
+        $sql = "SELECT
+            kd_kec, kd_desa, nm_desa,
+            COALESCE(SUM(total_fasih), 0) AS total_fasih,
+            COALESCE(SUM(fasih_kk), 0) AS fasih_kk,
+            COALESCE(SUM(fasih_umk), 0) AS fasih_umk,
+            COALESCE(SUM(fasih_um), 0) AS fasih_um,
+            COALESCE(SUM(fasih_ub), 0) AS fasih_ub,
+            COALESCE(SUM(fasih_bangunan), 0) AS fasih_bangunan,
+            COALESCE(SUM(flag_open_pbi), 0) AS sls_pbi,
+            COALESCE(SUM(kk_open_pbi), 0) AS kk_pbi,
+            COUNT(*) AS total_sls
+        FROM prelist_sls
+        WHERE kd_kab = ?";
+
+        $params = [$kdKab];
+        if (!empty($kdKec)) {
+            $sql .= " AND kd_kec = ?";
+            $params[] = $kdKec;
+        }
+        $sql .= " GROUP BY kd_kec, kd_desa, nm_desa ORDER BY total_fasih DESC";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function getFasihSummary(string $kdKab = '3509'): array
+    {
+        $stmt = $this->pdo->prepare("SELECT
+            COUNT(DISTINCT kd_kec) AS total_kecamatan,
+            COUNT(DISTINCT CONCAT(kd_kec, '-', kd_desa)) AS total_desa,
+            COUNT(*) AS total_sls,
+            SUM(total_fasih) AS total_fasih,
+            SUM(fasih_kk) AS fasih_kk,
+            SUM(fasih_umk) AS fasih_umk,
+            SUM(fasih_um) AS fasih_um,
+            SUM(fasih_ub) AS fasih_ub,
+            SUM(fasih_bangunan) AS fasih_bangunan,
+            SUM(flag_open_pbi) AS sls_pbi,
+            SUM(kk_open_pbi) AS kk_pbi
+        FROM prelist_sls
+        WHERE kd_kab = ?
+    ");
+        $stmt->execute([$kdKab]);
+        return $stmt->fetch() ?: [];
     }
 }

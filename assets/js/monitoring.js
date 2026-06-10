@@ -374,6 +374,89 @@ function stopAutoRefresh() {
     }
 }
 
+// ─── LK Pairing Widgets ────────────────────────────────────────
+
+function loadPairingProgress() {
+    fetch('?page=dashboard&sub=monitoring&action=pairing-progress')
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (!res.success) return;
+            renderPairingProgress(res.data);
+        });
+}
+
+function renderPairingProgress(data) {
+    var el = document.getElementById('pairingProgressBody');
+    if (!el) return;
+    var total = data.total_subsls || 0;
+    var paired = data.paired_both || 0;
+    var pct = total > 0 ? Math.round(paired / total * 100) : 0;
+    var pplOnly = (data.paired_ppl || 0) - paired;
+    var unpaired = total - (data.paired_ppl || 0);
+    var color = pct === 100 ? 'bg-success' : (pct > 0 ? 'bg-primary' : 'bg-secondary');
+
+    el.innerHTML =
+        '<div class="row g-2 align-items-center">' +
+        '<div class="col-md-8">' +
+        '<div class="d-flex justify-content-between small mb-1">' +
+        '<span><b>' + paired.toLocaleString('id-ID') + '</b> / ' + total.toLocaleString('id-ID') + ' subsls paired</span>' +
+        '<span class="fw-bold">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="progress" style="height:10px"><div class="progress-bar ' + color + '" style="width:' + pct + '%"></div></div>' +
+        '<div class="d-flex justify-content-between small text-muted mt-1">' +
+        '<span>PPL+PML: ' + paired.toLocaleString('id-ID') + '</span>' +
+        '<span>PPL Only: ' + pplOnly.toLocaleString('id-ID') + '</span>' +
+        '<span>Belum: ' + unpaired.toLocaleString('id-ID') + '</span>' +
+        '</div>' +
+        '</div>' +
+        '<div class="col-md-4">' +
+        '<div class="row g-1 text-center small">' +
+        '<div class="col-4"><div class="fw-bold text-se2026">' + (data.total_muatan || 0).toLocaleString('id-ID') + '</div><div class="text-muted" style="font-size:10px">Total Muatan</div></div>' +
+        '<div class="col-4"><div class="fw-bold text-warning">' + (data.zero_muatan || 0).toLocaleString('id-ID') + '</div><div class="text-muted" style="font-size:10px">Muatan 0</div></div>' +
+        '</div></div></div>';
+}
+
+function loadMissingPpl() {
+    fetch('?page=dashboard&sub=monitoring&action=missing-ppl')
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (!res.success || !res.data || !res.data.length) return;
+            var el = document.getElementById('missingPplAlert');
+            if (!el) return;
+            var html = '<div class="alert alert-warning alert-dismissible fade show py-2 small mb-0" role="alert">' +
+                '<i class="fas fa-exclamation-triangle me-1"></i><b>' + res.data.length + ' PPL</b> email tidak ditemukan di sistem:' +
+                '<ul class="mb-0 mt-1">';
+            res.data.forEach(function (p) {
+                html += '<li>' + escHtml(p.nama) + ' (' + escHtml(p.email) + ') — Kec: ' + escHtml(p.nm_kec) + '</li>';
+            });
+            html += '</ul>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            el.innerHTML = html;
+            el.classList.remove('d-none');
+        });
+}
+
+function loadPairingPerKec() {
+    fetch('?page=dashboard&sub=monitoring&action=pairing-per-kec')
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (!res.success || !res.data) return;
+            var el = document.getElementById('pairingKecTable');
+            if (!el) return;
+            var html = '';
+            res.data.forEach(function (k) {
+                html += '<tr>' +
+                    '<td>' + escHtml(k.nm_kec) + '</td>' +
+                    '<td class="text-center">' + (k.total_subsls || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-center">' + (k.total_muatan || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-center">' + (k.total_ppl || 0) + '</td>' +
+                    '<td class="text-center">' + (k.total_pml || 0) + '</td>' +
+                    '</tr>';
+            });
+            el.innerHTML = html;
+        });
+}
+
 // ─── Init ──────────────────────────────────────────────────────
 
 $(document).ready(function () {
@@ -439,5 +522,8 @@ $(document).ready(function () {
     loadKecamatanSummary();
     loadSlsData();
     loadNonSlsData();
+    loadPairingProgress();
+    loadMissingPpl();
+    loadPairingPerKec();
     startAutoRefresh();
 });
